@@ -1,0 +1,22 @@
+const express = require('express');
+const { body, validationResult } = require('express-validator');
+const { DEPKGTraveller, DEPKGTrip, DEPKGEpisode, DEPKGPreferenceSnapshot, HeritageSite } = require('../models/depkgModels');
+const { maybeRunConsolidation } = require('../engine/consolidationEngine');
+const { buildContextPack } = require('../engine/contextPack');
+const router = express.Router();
+
+async function ensureTraveller(userId){ let t=await DEPKGTraveller.findOne({userId}); if(!t)t=await DEPKGTraveller.create({userId,displayName:`Traveller_${userId.slice(-6)}`}); return t; }
+
+router.get('/profile', async(req,res)=>{ try{ const {userId='anonymous'}=req.query; const t=await DEPKGTraveller.findOne({userId}).lean(); if(!t)return res.json({success:true,data:{exists:false,userId}}); const liked=await DEPKGPreferenceSnapshot.countDocuments({travellerId:userId,status:'like'}); const avoided=await DEPKGPreferenceSnapshot.countDocuments({travellerId:userId,status:'avoid'}); const epCount=await DEPKGEpisode.countDocuments({travellerId:userId}); res.json({success:true,data:{exists:true,userId,totalTripsCompleted:t.totalTripsCompleted,unconsolidatedTripsCount:t.unconsolidatedTripsCount,lastConsolidatedAt:t.lastConsolidatedAt,episodeCount:epCount,preferencesSummary:{liked,avoided}}}); }catch(e){res.status(500).json({success:false,message:e.message})}});
+
+router.get('/preferences', async(req,res)=>{ try{ const {userId='anonymous',status}=req.query; const filter={travellerId:userId}; if(status)filter.status=status; const prefs=await DEPKGPreferenceSnapshot.find(filter).sort({confidence:-1}).lean(); res.json({success:true,data:{preferences:prefs,count:prefs.length}}); }catch(e){res.status(500).json({success:false,message:e.message})}});
+
+router.get('/sites', async(req,res)=>{ try{ const {region,category,archStyle}=req.query; const filter={isActive:true}; if(region)filter.region={$regex:region,$options:'i'}; if(category)filter.siteCategory=category; if(archStyle)filter.archStyle={$in:[archStyle]}; const sites=await HeritageSite.find(filter).lean(); res.json({success:true,data:{sites,count:sites.length}}); }catch(e){res.status(500).json({success:false,message:e.message})}});
+
+router.post('/feedback',[body('userId').notEmpty(),body('siteName').notEmpty(),body('satisfactionRating').isFloat({min:1,max:5})], async(req,res)=>{ const errs=validationResult(req); if(!errs.isEmpty())return res.status(400).json({success:false,errors:errs.array()}); try{ const {userId,siteName,siteId,satisfactionRating,activities,notes,destination}=req.body; await ensureTraveller(userId); const count=await DEPKGTrip.countDocuments({travellerId:userId}); const tripIndex=count+1; const trip=await DEPKGTrip.create({travellerId:userId,tripIndex,destination:destination||siteName,status:'completed',overallSatisfaction:satisfactionRating}); await DEPKGTraveller.updateOne({userId},{$inc:{totalTripsCompleted:1,unconsolidatedTripsCount:1}}); let siteAttributes={}; if(siteId){const hs=await HeritageSite.findOne({siteId}).lean(); if(hs)siteAttributes={archStyle:hs.archStyle,period:hs.period,dynasty:hs.dynasty,siteCategory:hs.siteCategory,region:hs.region,cuisine:hs.localCuisine};} await DEPKGEpisode.create({travellerId:userId,depkgTripId:trip._id,tripIndex,siteId:siteId||`custom_${Date.now()}`,siteName,siteAttributes,activities:activities||[],satisfactionRating,signedScore:(satisfactionRating-3)/2,notes}); maybeRunConsolidation(userId).catch(e=>console.warn('[DEPKG]',e.message)); res.status(201).json({success:true,message:'Feedback recorded',data:{tripIndex}}); }catch(e){res.status(500).json({success:false,message:e.message})}});
+
+router.post('/consolidate',[body('userId').notEmpty()],async(req,res)=>{ const errs=validationResult(req); if(!errs.isEmpty())return res.status(400).json({success:false,errors:errs.array()}); try{ const r=await maybeRunConsolidation(req.body.userId); res.json({success:true,data:r}); }catch(e){res.status(500).json({success:false,message:e.message})}});
+
+router.get('/context', async(req,res)=>{ try{ const {userId='anonymous',destination,region,duration,groupSize}=req.query; const interests=req.query.interests?req.query.interests.split(','):[]; const cp=await buildContextPack(userId,{destination,region,duration:parseInt(duration)||3,groupSize:parseInt(groupSize)||1,interests}); res.json({success:true,data:cp}); }catch(e){res.status(500).json({success:false,message:e.message})}});
+
+module.exports = router;

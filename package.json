@@ -1,0 +1,13 @@
+{
+  "name": "voices-of-heritage-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Voices of Heritage — Complete Platform Root",
+  "scripts": {
+    "start": "./start.sh",
+    "start:win": "powershell -ExecutionPolicy Bypass -File ./start.ps1",
+    "stop": "./stop.sh",
+    "stop:win": "powershell -ExecutionPolicy Bypass -File ./stop.ps1",
+    "dev": "./start.sh"
+  }
+}

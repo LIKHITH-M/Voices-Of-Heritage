@@ -1,0 +1,26 @@
+{
+  "name": "voh-ai-planner-service",
+  "version": "1.0.0",
+  "description": "DEPKG-powered AI Heritage Trip Planner backend for Voices of Heritage",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-validator": "^7.2.0",
+    "groq-sdk": "^0.9.1",
+    "mongoose": "^8.7.0",
+    "nodemailer": "^10.3.1",
+    "qrcode": "^1.5.4",
+    "razorpay": "^2.9.8",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}

@@ -1,0 +1,70 @@
+Here are the **Specifications, Technology Stack, and Project Structure** of the **AI Trip Planner** project:
+
+---
+
+### 📋 1. Project Specifications
+* **Core Goal**: A full-stack web application that automatically curates day-by-day travel itineraries based on destination, duration, budget, travel style, and interests using AI.
+* **Mapping and Navigation**: Leverages free, open-source mapping services instead of expensive proprietary APIs (like Google Maps) to keep core operations 100% free.
+* **Security & Auth**: Includes secure dual-token JWT authentication:
+  * **Access Token**: Short-lived (15 minutes), sent in API headers.
+  * **Refresh Token**: Long-lived (7 days), stored securely in HTTP-only cookies.
+  * **Safety Checks**: Includes rate-limiting on sensitive routes, Helmet security headers, password hashing (bcrypt), and input sanitization (MongoDB anti-injection).
+
+---
+
+### 💻 2. Technology Stack
+
+| Tier | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | **React 18** | High-performance user interface architecture |
+| | **React Router v6** | Client-side page navigation |
+| | **Tailwind CSS** | Premium responsive layout and styling |
+| | **Framer Motion** | Micro-interactive page transitions and animations |
+| | **React Query (TanStack)** | API request state caching and management |
+| | **React Leaflet** | Renders maps using OpenStreetMap tiles |
+| **Backend** | **Node.js & Express** | Lightweight REST API endpoint router |
+| | **MongoDB & Mongoose** | NoSQL database storage and database ODM modeling |
+| | **Socket.IO** | Real-time user notification events |
+| | **Winston** | Structured system logs |
+| **External Services** | **Google Gemini AI** | Primary AI engine for itinerary compilation |
+| | **Groq API** | High-speed backup LLM server |
+| | **Nominatim** | Free geocoding and coordinates lookup |
+| | **OSRM** | Free OSRM turn-by-turn routing engine |
+
+---
+
+### 📂 3. Project Structure
+
+```text
+AI-TripPlanner/
+├── client/                          # React Frontend
+│   ├── public/                      # Static assets (favicon, index.html)
+│   ├── src/
+│   │   ├── components/              # Modular UI components
+│   │   │   ├── auth/                # Login, Register, ProtectedRoute
+│   │   │   ├── common/              # Buttons, Cards, Modals, Inputs
+│   │   │   ├── layout/              # Navbars, Sidebars, Footers
+│   │   │   ├── maps/                # Leaflet maps, markers, routes
+│   │   │   └── trip/                # Itinerary day cards, details
+│   │   ├── contexts/                # Global React Context (Auth, Notifications)
+│   │   ├── hooks/                   # Custom shared React hooks
+│   │   ├── pages/                   # Views (Dashboard, Trip Planner, Profile)
+│   │   ├── services/                # Axios API services (interceptors, endpoints)
+│   │   ├── App.js                   # Application root
+│   │   └── index.css                # Tailwind global style configuration
+│   └── package.json                 # Frontend dependencies
+│
+├── server/                          # Express Backend
+│   ├── controllers/                 # Endpoint business logic (AI, maps, trips, auth)
+│   ├── middleware/                  # Route interception (Auth guards, rate limiters, loggers)
+│   ├── models/                      # MongoDB Schemas (User, Trip models)
+│   ├── routes/                      # Route endpoint declarations (/api/auth, /api/trips)
+│   ├── services/                    # Third-party integrations (Gemini AI, FreeMapService)
+│   ├── utils/                       # Security token tokens, validation helpers
+│   ├── server.js                    # Express app startup bootstrap
+│   └── package.json                 # Backend dependencies
+│
+├── docker-compose.yml               # Containerized MongoDB configuration
+├── package.json                     # Root orchestrator scripts (npm run dev)
+└── README.md                        # Documentation
+```

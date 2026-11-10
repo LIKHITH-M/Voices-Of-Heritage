@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Voices of Heritage — Paper I | Structured Literature Review</title>
+<style>
+*{box-sizing:border-box}
+@page{size:A4;margin:0}
+body{margin:0;background:#e8e8e8;color:#111;font-family:"Times New Roman",Times,serif}
+.paper{width:210mm;margin:0 auto;background:#fff}
+.page{width:210mm;min-height:297mm;padding:15.5mm 16.5mm 16mm 16.5mm;background:#fff;page-break-after:always;position:relative}
+.page:last-child{page-break-after:auto}
+@media print{body{background:#fff}.no-print{display:none!important}.paper{width:auto;margin:0}.page{margin:0}}
+.title{text-align:center;font-size:15.2pt;font-weight:700;line-height:1.28;margin:0 0 5px}
+.subtitle{text-align:center;font-size:9.25pt;font-style:italic;line-height:1.35;margin:0 0 8px;color:#222}
+.authors{text-align:center;font-size:10pt;font-weight:700;margin:0 0 2px}
+.affil{text-align:center;font-size:9pt;line-height:1.35;margin:0 0 8px}
+.rule{border:0;border-top:1.2px solid #111;margin:6px 0 8px}
+.section{font-size:10pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.35px;margin:8px 0 5px}
+.subsection{font-size:9.6pt;font-weight:700;font-style:italic;margin:7px 0 3px}
+.kicker{font-size:7.8pt;font-weight:700;letter-spacing:.35px;text-transform:uppercase;color:#444;margin-bottom:2px}
+p{font-size:9.1pt;line-height:1.46;text-align:justify;margin:0 0 5px;text-indent:12px}
+p.noindent{ text-indent:0 }
+.abstract{font-size:9.0pt;line-height:1.43;text-align:justify;margin-bottom:4px}
+.abstract b{font-style:normal}
+.keywords{font-size:8.7pt;line-height:1.4;text-align:justify}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.full{grid-column:1/-1}
+.fig{border:1px solid #999;padding:4px;margin:5px 0 5px}
+.fig img{display:block;width:100%;max-height:92mm;object-fit:contain}
+.fig.small img{max-height:58mm}
+.fig.medium img{max-height:82mm}
+.caption{font-size:7.9pt;line-height:1.28;text-align:center;font-style:italic;margin-top:3px}
+.table-title{font-size:8.2pt;font-weight:700;text-align:center;margin:4px 0 3px}
+table{width:100%;border-collapse:collapse;font-size:7.55pt;margin:5px 0}
+th,td{border:1px solid #444;padding:3px 4px;vertical-align:top}
+th{font-size:7.5pt;background:#e6e6e6;text-align:center}
+.tnote{font-size:7.1pt;line-height:1.28;font-style:italic;margin:2px 0 5px}
+.box{border:1px solid #777;padding:6px;margin:5px 0;background:#fafafa}
+.box strong{font-size:8.55pt}
+.callout{border-left:3px solid #111;padding-left:6px;margin:5px 0}
+.arch{font:6.3pt/1.32 "Courier New",monospace;white-space:pre-wrap;background:#f7f7f7;border:1px solid #bbb;padding:6px;margin:4px 0}
+ul{margin:3px 0 5px 17px;padding:0;font-size:8.55pt;line-height:1.38}
+li{margin-bottom:2px}
+.refs{font-size:7.55pt;line-height:1.30}.refpage .refs{column-count:2;column-gap:10mm;column-fill:balance}.refpage .ref{break-inside:avoid;page-break-inside:avoid;margin-bottom:2.2px}
+.ref{margin:0 0 2.5px;text-align:left;padding-left:17px;text-indent:-17px}
+.footer{position:absolute;bottom:6.5mm;left:16.5mm;right:16.5mm;text-align:center;font-size:7.0pt;color:#555}
+.page-num{font-size:7.0pt;color:#555}
+button{position:fixed;top:12px;right:12px;z-index:99;padding:8px 14px;border:0;border-radius:4px;background:#111;color:#fff;font:12px Arial,sans-serif;cursor:pointer}
+.smallcaps{font-variant:small-caps}
+.nowrap{white-space:nowrap}
+</style>
+</head>
+<body>
+<button class="no-print" onclick="window.print()">Print / Save as PDF</button>
+<div class="paper">
+
+<!-- PAGE 1 -->
+<section class="page">
+<div class="title">Voices of Heritage — Paper I: Immersive Technologies and Artificial Intelligence<br/>for Cultural Heritage Tourism in India</div>
+<div class="subtitle">A Structured Literature Review, Evidence Synthesis, and Architectural Specification for WebXR, WebRTC, RAG, AI-Assisted Trip Planning, and Predictive Visitor Analytics</div>
+<div class="authors">Likhith M R &nbsp;|&nbsp; [Co-Author 2] &nbsp;|&nbsp; [Co-Author 3] &nbsp;|&nbsp; [Co-Author 4]</div>
+<div class="affil">Department of Computer Science &amp; Engineering, [College Name], Karnataka, India<br/>Under the guidance of: [Faculty Guide Name], Assistant Professor</div>
+<hr class="rule"/>
+
+<div class="abstract"><b>Abstract — </b>Cultural-heritage digitisation increasingly combines immersive media, conversational artificial intelligence, recommender systems, and data-driven visitor management. This paper presents a structured literature review and evidence synthesis of these technologies in cultural-heritage and tourism contexts, followed by an architectural specification for the <em>Voices of Heritage</em> platform. The review is organised into four technology pillars: (1) immersive delivery through browser-based WebXR, WebRTC live communication, virtual environments, and 360° storytelling; (2) AI and multilingual NLP using retrieval-augmented generation (RAG), Indic language resources, knowledge-graph recommendation, and AI-assisted itinerary generation; (3) visitor analytics using computer-vision crowd counting, BLE sensing, and tourism-volume forecasting; and (4) offline-first and accessible delivery using service-worker caching, local storage, and accessibility standards. The review is explicitly bounded to evidence available by June 2024 and is presented as a structured review rather than an exhaustive PRISMA systematic review. Thirty-one scholarly, standards, governmental, and legal sources are used. The synthesis indicates that the individual technologies are already established or technically mature at different levels, while the main unresolved issue for the proposed platform is their end-to-end integration under heritage-specific constraints. Four integration gaps are therefore derived from the reviewed evidence: continuity across immersive modalities, validated multilingual heritage dialogue for Indic languages, coupling of real-time and predictive visitor analytics, and comprehensive offline-first delivery. The paper contributes an evidence-bounded architecture that separates established findings, proposed design choices, and implementation evidence. The AI Trip Planner is the only production-deployed module and has undergone preliminary functional testing; the remaining modules remain prototypes or architectural specifications awaiting empirical validation.</div>
+<div class="keywords"><b>Keywords — </b>Cultural Heritage; WebXR; WebRTC; Retrieval-Augmented Generation; Multilingual NLP; Museum AI; Recommender Systems; Crowd Analytics; Tourism Forecasting; Progressive Web App; Accessibility; Archaeological Survey of India.</div>
+
+<div class="section">I. Introduction</div>
+<div class="grid2">
+<div>
+<p>India has a large and geographically distributed protected heritage estate. A 2023 Rajya Sabha reply states that 3,693 centrally protected monuments/sites fall under the jurisdiction of the Archaeological Survey of India (ASI), illustrating the scale at which digital interpretation and visitor-management tools may need to operate [1]. The UNESCO World Heritage Convention frames protection and transmission of cultural heritage as a long-term public responsibility [2]. Heritage computing has consequently developed a broad set of approaches for documentation, interpretation, visitor experience, and digital access [3], [30], [31].</p>
+<p>The research problem addressed here is deliberately narrower than “AI for heritage” as a whole. AR, VR, browser-based XR, RAG, museum-oriented LLM systems, crowd counting, and tourism forecasting each have established literature. The harder problem is how such components can be integrated into a coherent heritage-tourism service while preserving provenance, accessibility, privacy, and operational realism.</p>
+</div>
+<div>
+<p>This paper therefore treats the <em>Voices of Heritage</em> platform as an architectural research vehicle rather than evidence that all proposed modules are already validated. Four research questions guide the review:</p>
+<div class="box"><strong>RQ1 — Immersive:</strong> What evidence exists for AR/VR/XR and browser-based real-time heritage experiences, and what deployment constraints recur?<br/><br/><strong>RQ2 — AI/NLP:</strong> What evidence exists for RAG, multilingual Indian-language NLP, LLM-based museum recommendation, and knowledge-graph approaches?<br/><br/><strong>RQ3 — Analytics:</strong> What evidence exists for crowd-density estimation, visitor sensing, and tourism-volume forecasting, and what limits transfer to heritage sites?<br/><br/><strong>RQ4 — Integration:</strong> Which integration challenges remain when immersive, AI, analytics, offline, privacy, and accessibility requirements are considered together?</div>
+</div>
+</div>
+
+<div class="footer">Voices of Heritage — Paper I | Structured Literature Review &amp; Architectural Specification &nbsp;|&nbsp; <span class="page-num">1</span></div>
+</section>
+
+<!-- PAGE 2 -->
+<section class="page">
+<div class="section">II. Literature Survey</div>
+<div class="subsection">A. Review Methodology and Scope</div>
+<p class="noindent">This study uses a <strong>structured literature review</strong>, not a PRISMA systematic review. Searches were defined around the four research questions and targeted IEEE Xplore, ACM Digital Library, Google Scholar, Scopus, and ScienceDirect, with a search cutoff of June 2024. Query families covered cultural heritage with AR/VR/XR, WebRTC and heritage, retrieval-augmented generation and tourism, crowd-density estimation and heritage, LSTM and tourism forecasting, and progressive web applications with heritage tourism. Search concepts were iteratively expanded with neighbouring terms when relevant results used different terminology. Backward citation chaining was used to expand relevant foundational and domain-specific sources.</p>
+<table>
+<tr><th>RQ</th><th>Search concepts</th><th>Evidence types</th><th>Extraction fields</th></tr>
+<tr><td>RQ1</td><td>AR, VR, MR, XR, WebXR, WebRTC, 360°, heritage</td><td>Surveys, museum studies, standards, heritage documentation</td><td>Modality, context, visitor outcome, deployment constraint</td></tr>
+<tr><td>RQ2</td><td>RAG, LLM, chatbot, Indic NLP, knowledge graph, recommendation</td><td>Primary NLP/LLM studies, language resources, reviews</td><td>Task, corpus, grounding, language scope, evaluation, limitation</td></tr>
+<tr><td>RQ3</td><td>crowd counting, CSRNet, BLE, LSTM, tourism forecasting, Prophet</td><td>CV benchmarks, IoT studies, forecasting studies</td><td>Dataset/context, metric, transferability, privacy/operational risk</td></tr>
+<tr><td>RQ4</td><td>offline PWA, service worker, accessibility, privacy, interoperability</td><td>Standards, official guidance, legislation</td><td>Constraint, mechanism, governance requirement, validation need</td></tr>
+</table>
+<p class="noindent"><strong>Eligibility.</strong> Priority was given to peer-reviewed publications, authoritative standards, and governmental/legal sources directly addressing one or more research questions. Older foundational works were retained when they established a core technical concept still used by the proposed architecture. Non-English publications and unattributed grey literature were excluded. For each retained source, the review extracted context, task, evidence type, principal finding, limitation, and relevance to the Indian-heritage setting.</p>
+<p class="noindent"><strong>Limit of reproducibility.</strong> The original search process did not preserve per-database retrieval counts, duplicate-removal logs, or independent dual-reviewer screening records. Those omissions prevent a claim of exhaustive systematic-review coverage. The manuscript therefore reports the process and evidence boundary rather than inventing a numerical PRISMA flow.</p>
+<div class="callout"><p class="noindent"><b>Evidence rule:</b> a source is used to establish only what it actually demonstrates. A technical standard establishes an interface or mechanism; an empirical study establishes findings in its tested context; a product page establishes a documented feature; and a proposed module is not treated as a validated result.</p></div>
+
+<div class="subsection">B. Immersive Technologies for Cultural Heritage</div>
+<div class="grid2">
+<div>
+<p>Bekele et al. provide a broad cultural-heritage taxonomy of AR, VR, and mixed reality, covering education, exhibition enhancement, exploration, reconstruction, and virtual museums [3]. Jung et al. studied a mixed VR/AR museum setting with 163 museum visitors and reported relationships between social presence, experience dimensions, and visitor outcomes [4]. Speicher et al. reviewed the mixed-reality literature and proposed a seven-dimensional framework for characterising MR experiences, emphasising that the field lacks a single universally agreed definition [5].</p>
+<p>These studies support immersive media as a legitimate heritage-interpretation pathway. They do not, however, establish a single optimal modality or validate the present platform's browser implementation.</p>
+</div>
+<div>
+<p>W3C's WebXR Device API provides web interfaces for accessing compatible VR/AR devices and related sensors [9]. The architectural implication is that browser-based XR can avoid mandatory native-app installation on compatible devices; this should not be interpreted as universal browser or hardware compatibility.</p>
+<p>Early virtual-reconstruction work demonstrates that digital heritage environments long predate modern browser XR [7]. Mobile AR surveys further show the importance of device, wireless, tracking, and interaction constraints [8]. Recent cultural-heritage AI reviews also emphasize the growing role of computer vision, AI-assisted inspection, and cross-domain digital-heritage research agendas [30], [31].</p>
+</div>
+</div>
+<div class="callout"><p class="noindent"><b>Synthesis.</b> The reviewed evidence establishes the individual immersive directions. The defensible integration gap is narrower: the reviewed corpus does not provide an established session-persistent architecture for moving a visitor among live communication, browser AR, browser VR, and 360° media within a continuous heritage journey.</p></div>
+<div class="footer">Page <span class="page-num">2</span></div>
+</section>
+
+<!-- PAGE 3 -->
+<section class="page">
+<div class="subsection">C. Conversational AI, Multilingual NLP, and Recommendation</div>
+<div class="grid2">
+<div>
+<p>The Transformer architecture introduced by Vaswani et al. underpins modern attention-based language models [19]. Lewis et al. introduced retrieval-augmented generation (RAG), combining parametric language modelling with a retrieved external index [11]. Their results show that retrieved evidence can improve performance on knowledge-intensive tasks, but the method does not guarantee correctness: retrieval failures, incomplete corpora, and generation errors remain possible.</p>
+<p>Kakwani et al. provide corpora, embeddings, models, and evaluation resources for 11 major Indian languages [12]. The present platform therefore treats “20+ Indian languages” as a <strong>design target</strong>, not a measured language-coverage result. Additional languages depend on the selected multilingual LLM and require per-language evaluation.</p>
+</div>
+<div>
+<p>Systematic tourism literature also shows AI applications spanning tourist experience, heritage preservation, personalisation, and operational tasks. Majid et al. reviewed 213 scholarly articles on intelligent automation for sustainable tourism and identified themes including tourist experience and heritage preservation [13]. García-Madurga and Grilló-Méndez synthesised 31 prior review articles on AI in tourism and highlighted the breadth of applications and the need to examine implementation constraints [14].</p>
+<p>For cultural-heritage recommendation, Borrego et al. review Linked Open Data and knowledge-graph approaches in Spanish museum contexts [15]. TransE is a general knowledge-graph embedding method for representing entities and relations in a shared vector space [16]. Its use here is therefore a proposed mechanism informed by the literature rather than an experimentally established solution for Indian heritage cold start.</p>
+</div>
+</div>
+
+<div class="subsection">D. LLMs in Museum and Heritage Contexts</div>
+<div class="grid2">
+<div>
+<p>Trichopoulos et al. developed a GPT-4-based museum guide and explicitly discuss scientific-accuracy limitations and the need for human oversight and validation [17]. This directly supports a curatorial-governance requirement for heritage dialogue systems.</p>
+<p>A separate study by the same group investigated GPT-4 as a context-aware museum recommendation system, using visitor preferences and contextual factors such as location and visit time and evaluating the approach through user studies [18]. The study supports the feasibility of LLM-based museum recommendation but does not demonstrate a multilingual RAG system for Indian heritage.</p>
+</div>
+<div>
+<p>These findings motivate three safeguards in the proposed architecture: evidence provenance, explicit uncertainty handling, and human review for culturally sensitive content. RAG is therefore positioned as a <strong>grounding mechanism</strong>, not a factuality guarantee.</p>
+<div class="box"><strong>Evidence boundary:</strong> the planned 12,000+ document heritage corpus, top-5 retrieval policy, GPT-4o generation, 20+ language target, and abstention rules are architectural specifications. None is presented as a measured performance result of the current system.</div>
+</div>
+</div>
+
+<div class="subsection">E. AI Tourism Synthesis</div>
+<p class="noindent">Across the reviewed AI literature, three conclusions are defensible. First, AI use in tourism is already a substantial research area [13], [14]. Second, LLMs have been tested in museum interpretation and recommendation, but with explicit concerns about context, accuracy, and governance [17], [18]. Third, RAG offers a principled mechanism for conditioning generation on retrieved sources [11]. The evidence does not justify the stronger statement that a particular LLM, prompt, embedding model, or vector database will automatically produce accurate heritage interpretation. The proposed system therefore treats retrieval quality, provenance, abstention, and expert review as validation requirements.</p>
+<div class="footer">Page <span class="page-num">3</span></div>
+</section>
+
+<!-- PAGE 4 -->
+<section class="page">
+<div class="subsection">F. Crowd Analytics and Predictive Visitor Management</div>
+<div class="grid2">
+<div>
+<p>MCNN introduced a multi-column architecture for crowd-density estimation and evaluated transfer across crowd datasets [20]. CSRNet later used dilated convolutions to preserve larger receptive fields in congested scenes and reported strong results on established benchmarks [21]. Bayesian Loss improved point-supervised crowd-count learning by replacing a fixed pixel-wise density target with a probabilistic supervision objective [22]. These studies establish credible computer-vision foundations, but their benchmark contexts do not establish performance at Indian heritage sites.</p>
+<p>Heritage deployment adds domain-shift factors such as lower and more structured density, camera placement, architectural occlusion, shadows, and changing outdoor illumination. Site-specific annotated data are therefore required before operational deployment.</p>
+</div>
+<div>
+<p>IoT-based visitor sensing provides a complementary pathway. Spachos and Plataniotis demonstrated BLE-beacon indoor positioning in a smart museum, including visitor localisation, analytics, recommendation, and experimental evaluation [23]. This supports BLE as a plausible sensing mechanism for selected heritage zones, but it does not show that BLE alone can replace image-based counting across large outdoor complexes.</p>
+<p>For forecasting, Bi, Liu, and Li proposed an LSTM model using historical tourism volume, search-engine data, and weather information to forecast daily visitor volume at two tourist attractions [24]. Prophet provides an interpretable alternative built around trend, seasonality, and holiday components [25]. Neither source establishes seven-day forecast accuracy for ASI sites.</p>
+</div>
+</div>
+<table>
+<tr><th>Evidence</th><th>Established by the source</th><th>Boundary for this paper</th></tr>
+<tr><td>MCNN [20]</td><td>Image-based density estimation over varied crowd conditions.</td><td>No evidence of Indian monument deployment in the cited study.</td></tr>
+<tr><td>CSRNet [21]</td><td>Strong density-map estimation on established crowd-count benchmarks.</td><td>Performance under lower-density heritage scenes requires local testing.</td></tr>
+<tr><td>Bayesian Loss [22]</td><td>Alternative point-supervision objective with improvements on tested datasets.</td><td>Does not remove site-specific domain shift.</td></tr>
+<tr><td>BLE museum study [23]</td><td>BLE-based indoor positioning and visitor analytics in a museum setting.</td><td>Coverage, placement, and countability vary by site.</td></tr>
+<tr><td>Bi et al. [24]</td><td>LSTM forecasting using historical, search, and weather variables.</td><td>Target site, forecast horizon, and accuracy must be revalidated for ASI data.</td></tr>
+<tr><td>Prophet [25]</td><td>Interpretable forecasting framework with trend/seasonality/holiday components.</td><td>Comparative superiority for heritage sites is not assumed.</td></tr>
+</table>
+
+<div class="subsection">G. Offline-First Delivery, Accessibility, and Privacy</div>
+<div class="grid2">
+<div>
+<p>Service workers and Workbox provide mature browser mechanisms for precaching and runtime caching, enabling offline access to resources that have previously been cached [26]. This supports an offline-first architecture, but the effect on actual task completion and performance must be measured on representative degraded networks rather than inferred from the existence of caching.</p>
+<p>The proposed PWA therefore separates functions into: cached site information, pre-cached media and models, offline map resources, and network-dependent services. A live RAG response is not treated as “offline AI”; offline mode is limited to explicitly cached content and previously generated answers unless an on-device model is separately implemented.</p>
+</div>
+<div>
+<p>India's Rights of Persons with Disabilities Act, 2016 contains provisions addressing access to information and communication technology [27]. The platform consequently <strong>targets</strong> WCAG 2.1 Level AA rather than claiming present conformance. WCAG 2.1 specifies a minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text under the relevant Level-AA success criterion [28].</p>
+<p>The Digital Personal Data Protection Act, 2023 establishes obligations concerning digital personal data processing and safeguards [29]. This paper does not claim legal compliance; instead it proposes aggregation, minimisation, limited retention, clear purpose specification, and security review as design controls, with formal legal assessment required before operational deployment.</p>
+</div>
+</div>
+<div class="footer">Page <span class="page-num">4</span></div>
+</section>
+
+<!-- PAGE 5 -->
+<section class="page">
+<div class="section">III. Evidence Synthesis Across the Four Pillars</div>
+<p class="noindent">To strengthen the literature-survey contribution, the review compares evidence by <strong>maturity, context, and transferability</strong> rather than by a binary platform score. The resulting synthesis is deliberately conservative: “established” means that a technique is supported in the literature; it does not mean that it is ready for deployment at every heritage site.</p>
+<table>
+<tr><th>Capability</th><th>Evidence maturity</th><th>Representative sources</th><th>Transferability issue</th></tr>
+<tr><td>AR/VR/MR heritage experiences</td><td>Established research direction</td><td>[3], [4], [5], [6]</td><td>Outcomes vary by modality, context, interaction design, and evaluation measure.</td></tr>
+<tr><td>Browser-based XR</td><td>Standards-supported mechanism</td><td>[9]</td><td>Device support, tracking, permissions, and content engineering remain practical constraints.</td></tr>
+<tr><td>WebRTC live communication</td><td>Standards-supported browser architecture</td><td>[10]</td><td>Heritage-specific latency, scale, and annotation experience still require testing.</td></tr>
+<tr><td>RAG / grounded dialogue</td><td>Established NLP architecture</td><td>[11], [17]</td><td>Retrieval quality, source coverage, citation accuracy, and abstention need evaluation.</td></tr>
+<tr><td>Indic multilingual NLP</td><td>Strong resource foundation for 11 languages</td><td>[12]</td><td>20+ language support remains a target requiring language-specific evaluation.</td></tr>
+<tr><td>Knowledge-graph recommendation</td><td>Established heritage/LOD direction</td><td>[15], [16]</td><td>Cold-start effects must be measured with real heritage interaction data.</td></tr>
+<tr><td>Crowd counting</td><td>Strong computer-vision benchmark literature</td><td>[20]–[22], [30]</td><td>Dataset and camera-domain shift is a primary operational risk.</td></tr>
+<tr><td>BLE visitor analytics</td><td>Demonstrated in museum/indoor settings</td><td>[23]</td><td>Coverage and inference quality depend on site layout and deployment density.</td></tr>
+<tr><td>Tourism forecasting</td><td>Established daily-volume forecasting research</td><td>[24], [25]</td><td>Performance depends on local history, seasonality, exogenous variables, and baselines.</td></tr>
+<tr><td>Offline PWA delivery</td><td>Technically mature web mechanism</td><td>[26]</td><td>Comprehensive offline XR/content delivery is application-specific and storage-constrained.</td></tr>
+<tr><td>Accessibility and privacy governance</td><td>Normative frameworks exist</td><td>[27]–[29]</td><td>Conformance and legal compliance require direct testing and governance review.</td></tr>
+</table>
+
+<div class="subsection">Cross-Pillar Interpretation</div>
+<div class="grid2">
+<div>
+<p>The literature is uneven in evidence maturity. Immersive heritage studies and computer-vision benchmarks have long histories; browser standards define increasingly practical delivery mechanisms; and museum-oriented LLM studies are more recent and explicitly highlight accuracy and governance concerns [3]–[6], [17], [18]. Tourism forecasting has a mature methodological literature, while its direct transfer to ASI visitor management remains an empirical question [24], [25].</p>
+</div>
+<div>
+<p>AI and offline delivery also create a distinction between <em>availability</em> and <em>intelligence</em>. Caching can make information available without a network, but it cannot by itself reproduce a live cloud RAG pipeline. Likewise, an LLM can be multilingual in a broad sense while still performing unevenly across lower-resource Indic languages. These distinctions shape the architecture and the validation plan.</p>
+</div>
+</div>
+
+<div class="box"><strong>Review conclusion at this stage:</strong> the literature supports the feasibility of the component technologies, but it does not provide empirical evidence that the proposed combination will work reliably at Indian heritage sites. The contribution is therefore positioned as an integration architecture plus a testable research agenda.</div>
+<div class="footer">Page <span class="page-num">5</span></div>
+</section>
+
+<!-- PAGE 6 -->
+<section class="page">
+<div class="section">IV. Gaps Derived from the Reviewed Evidence</div>
+<div class="grid2">
+<div>
+<div class="subsection">Gap 1 — Integrated Multi-Modal Immersive Architecture</div>
+<p class="noindent">Prior work establishes AR, VR, MR, and 360° heritage experiences independently [3]–[6]. Within the reviewed corpus, we did not identify an established, session-persistent architecture that transfers visitor context among live guided communication, browser AR, browser VR, and 360° media. This is treated as an <strong>integration gap</strong>, not a claim that multimodal heritage experiences do not exist.</p>
+
+<div class="subsection">Gap 2 — Multilingual RAG for Indic Heritage Dialogue</div>
+<p class="noindent">IndicNLP provides resources for 11 major Indian languages [12], while museum LLM studies highlight the value of domain context and the need for curatorial oversight [17], [18]. We did not identify, in the reviewed corpus, a published heritage RAG chatbot with independently reported validation of simultaneous support for more than two Indian languages. The gap is therefore framed as a <strong>validation and application gap</strong> rather than an absolute absence of multilingual LLMs.</p>
+</div>
+<div>
+<div class="subsection">Gap 3 — Unified Real-Time and Predictive Visitor Analytics</div>
+<p class="noindent">Crowd-density estimation, BLE visitor sensing, and tourism forecasting have each been studied [20]–[25]. Within the reviewed heritage-specific literature, we did not identify an end-to-end architecture in which real-time anomalies feed forecasting recalibration and operational decision support. This is an <strong>integration/operations gap</strong>.</p>
+
+<div class="subsection">Gap 4 — Comprehensive Offline-First Heritage Delivery</div>
+<p class="noindent">Service-worker caching can support offline access to cached resources [26], but the reviewed literature did not document a single heritage PWA combining offline site information, offline map resources, cached immersive assets, previously generated response caches, and queued transaction synchronisation as one integrated workflow. This is an <strong>engineering architecture gap</strong>.</p>
+</div>
+</div>
+
+<div class="subsection">Gap Qualification Test</div>
+<table>
+<tr><th>Test</th><th>Question</th><th>Requirement for retaining the gap</th></tr>
+<tr><td>Corpus-bounded</td><td>Is the statement tied to the actual reviewed sources?</td><td>Use “we did not identify” rather than universal absence claims.</td></tr>
+<tr><td>Evidence-linked</td><td>Do multiple sources establish the component technologies?</td><td>Gap should emerge from comparison or non-integration, not from one missing citation.</td></tr>
+<tr><td>Context-aware</td><td>Is Indian heritage materially different from the study context?</td><td>State the transfer limitation explicitly.</td></tr>
+<tr><td>Testable</td><td>Can the proposed architecture be evaluated?</td><td>Define measurable validation metrics and datasets.</td></tr>
+</table>
+
+<div class="callout"><p class="noindent"><b>Important scope statement.</b> The paper does not claim to prove that no other platform anywhere implements these combinations. It reports what was or was not identified in the bounded search and evidence corpus described in Section II.</p></div>
+<div class="footer">Page <span class="page-num">6</span></div>
+</section>
+
+<!-- PAGE 7 -->
+<section class="page">
+<div class="section">V. Proposed System Architecture</div>
+<div class="subsection">A. Module Architecture Overview</div>
+<div class="fig medium"><img src="assets/architecture.jpg" alt="Voices of Heritage module architecture"/><div class="caption">Fig. 2. Proposed module architecture. The diagram separates immersive delivery, AI/NLP, crowd analytics, and offline-sync services behind a common API layer. Only the Trip Planner is currently classified as deployed.</div></div>
+<div class="arch">CLIENT — Browser / PWA
+  React + A-Frame + Three.js + Pannellum + WebXR + Mapbox GL JS + D3
+  Workbox Service Worker + IndexedDB
+
+                    HTTPS / WSS / WebRTC
+                           │
+API GATEWAY — authentication / rate limiting / CORS
+          ┌────────────────┼────────────────────┐
+          │                │                    │
+IMMERSIVE SERVICE     AI / NLP SERVICE     CROWD ANALYTICS     OFFLINE SYNC
+Mediasoup SFU         LangChain + RAG      CSRNet + BLE        IndexedDB queue
+WebRTC annotation     GPT-4o               LSTM + Prophet      conflict handling
+WebXR / 360°          Pinecone             site telemetry      cache/versioning
+                     IndicNLP
+                           │
+                 PostgreSQL + Redis + Object Storage/CDN</div>
+
+<div class="subsection">B. Immersive Experiences Service</div>
+<div class="grid2">
+<div>
+<p><strong>WebRTC Live Tours.</strong> The proposed service uses Mediasoup as a Selective Forwarding Unit (SFU) for guide-side video and audio. Media transport follows the WebRTC security model, while guide annotations are broadcast as separate application events so that participants can render synchronized visual highlights. The design claim is architectural; latency, concurrency, and annotation usability require measurement.</p>
+<p><strong>WebXR AR.</strong> The AR module is designed to use browser XR hit-testing on compatible devices to place documented reconstruction assets without printed marker cards. Models would be delivered as compressed GLB assets through a CDN. A fallback “magic-window” interaction can provide non-immersive access when immersive-AR support is unavailable.</p>
+</div>
+<div>
+<p><strong>WebXR VR.</strong> Multi-room heritage environments are authored in A-Frame with linked scenes and teleportation locomotion. The single codebase is intended for WebXR-compatible headsets and supported browser-based experiences; device-specific support is treated as a deployment matrix rather than assumed universally.</p>
+<p><strong>360° Storytelling.</strong> Pannellum renders equirectangular panoramas with hotspots, audio narration, and documentary links. The storytelling model supports guided progression and free exploration. Content provenance remains a heritage-governance requirement: reconstructions should be linked to documented evidence or clearly labelled as interpretive visualisation.</p>
+</div>
+</div>
+<div class="footer">Page <span class="page-num">7</span></div>
+</section>
+
+<!-- PAGE 8 -->
+<section class="page">
+<div class="subsection">C. Heritage RAG and Multilingual Service</div>
+<div class="grid2">
+<div>
+<p>The chatbot is designed around a curated heritage corpus, dense embeddings, vector retrieval, and GPT-4o generation. The planned corpus includes UNESCO property documentation, ASI reports, scholarly monographs, and expert-curated question–answer pairs. The top retrieved passages would be assembled into a structured context prompt with provenance metadata. The system prompt would instruct the model to answer from retrieved evidence and abstain or state uncertainty when the retrieved context is insufficient.</p>
+<p>The architecture intentionally treats source ranking, document versioning, chunk provenance, and citation presentation as first-class components. This responds directly to museum-oriented LLM research that warns about scientific accuracy and the need for human oversight [17].</p>
+</div>
+<div>
+<p><strong>Multilingual support.</strong> Language identification and IndicNLP preprocessing cover the 11 languages represented in the cited resource [12]. A user-controlled language selector can override uncertain automatic detection. For languages outside that preprocessing scope, the LLM provides a fallback path, but language quality must be measured independently rather than inferred from model availability.</p>
+<p>Accordingly, “20+ Indian languages” remains a <strong>design target</strong>. A 9/10-quality empirical claim would require per-language test sets and reporting of answer correctness, retrieval quality, citation accuracy, abstention, and failure modes.</p>
+</div>
+</div>
+
+<div class="subsection">D. AI Trip Planner — Implemented Module</div>
+<div class="grid2">
+<div>
+<p>The AI Trip Planner is the only production-deployed module described in this paper. It accepts natural-language travel preferences and uses Gemini 1.5 Pro to extract structured itinerary parameters such as region, heritage category, budget, mobility constraints, cultural interests, and duration. Nominatim resolves place names and OSRM produces multi-waypoint road routes.</p>
+<p>The application renders a day-by-day itinerary containing site information, entry-fee fields, travel instructions, and route segments. Unmapped place names can enter a manual-coordinate fallback rather than silently producing an invalid route.</p>
+</div>
+<div>
+<div class="fig small"><img src="assets/trip.jpg" alt="AI Trip Planner interface"/><div class="caption">Fig. 3. Implemented Trip Planner interface. The figure documents the current production-facing workflow; it is not an accuracy benchmark.</div></div>
+<p>Internal functional testing covered 47 queries across Karnataka, Rajasthan, Tamil Nadu, and Odisha. All tested outputs met the paper's structural-completeness definition: a day-by-day schedule, at least one route segment with estimated travel time, site opening-hours information, and an ASI fee field. This is <strong>functional smoke testing</strong>, not evidence of itinerary optimality, factual accuracy, or user satisfaction.</p>
+</div>
+</div>
+
+<div class="subsection">E. Knowledge-Graph Recommendation — Proposed</div>
+<p class="noindent">The proposed knowledge graph would encode monuments, dynasties, architectural styles, and regions using ASI and UNESCO documentation. TransE embeddings provide a baseline representation mechanism [16]. A later-stage recommender could combine semantic similarity with interaction-based signals; any claim that this resolves cold start should be treated as a hypothesis to be tested on actual heritage interaction data.</p>
+<div class="footer">Page <span class="page-num">8</span></div>
+</section>
+
+<!-- PAGE 9 -->
+<section class="page">
+<div class="subsection">F. Crowd Analytics Service — Proposed</div>
+<div class="grid2">
+<div>
+<p><strong>Real-time density estimation.</strong> The service may aggregate three optional channels: BLE zone counts, Wi-Fi probe-derived telemetry where legally and technically appropriate, and CCTV frames processed through a CSRNet inference endpoint. BLE aggregation is preferred when the operational goal is zone-level presence rather than individual trajectory reconstruction. CCTV deployment would require site-specific data, privacy review, camera placement validation, and model fine-tuning.</p>
+<p>CSRNet density maps would be downsampled to a site zone grid and transmitted to an administrator dashboard. The dashboard can show zone-level density and threshold status without storing individual identities.</p>
+</div>
+<div>
+<p><strong>Forecasting.</strong> Per-site forecasting models would use historical visitor counts with variables such as day-of-week, public holidays, weather, and a search-interest indicator inspired by prior tourism forecasting work [24]. LSTM and Prophet would be compared against simple baselines such as seasonal-naïve forecasting before any operational use.</p>
+<p><strong>Decision support.</strong> Real-time anomalies and forecast thresholds would trigger alerts and could inform ticketing controls. Automated ticket suspension is a proposed governance mechanism, not a validated operational rule; safety thresholds require institutional approval and conservative fail-safe behaviour.</p>
+</div>
+</div>
+
+<div class="subsection">G. Privacy and Governance by Design</div>
+<table>
+<tr><th>Data source</th><th>Proposed treatment</th><th>Primary risk to validate</th></tr>
+<tr><td>BLE</td><td>Aggregate by zone/time window; avoid individual trajectory storage.</td><td>Coverage, inference error, consent/notice where applicable.</td></tr>
+<tr><td>Wi-Fi telemetry</td><td>Use only where technically available and legally appropriate; prefer aggregate counts.</td><td>MAC randomisation, privacy implications, unstable countability.</td></tr>
+<tr><td>CCTV</td><td>Process frames for density estimation; avoid face recognition and unnecessary identity data.</td><td>Model bias, retention, access control, lawful basis, security.</td></tr>
+<tr><td>Visitor profile data</td><td>Collect only attributes needed for itinerary/recommendation tasks.</td><td>Purpose limitation, security, retention, user transparency.</td></tr>
+</table>
+<p class="noindent">The design incorporates privacy minimisation principles, but the paper does not claim compliance with the Digital Personal Data Protection Act 2023. Legal compliance would depend on actual data flows, notices, lawful processing, security controls, processor relationships, and applicable rules [29].</p>
+
+<div class="subsection">H. Offline-First and Accessibility Design</div>
+<div class="grid2">
+<div>
+<p>Workbox Service Worker caching would pre-cache site maps, text panels, selected audio, and approved immersive assets [26]. IndexedDB would store local itinerary data, version metadata, and a sync queue. Offline operation is explicitly bounded: live WebRTC sessions, fresh RAG retrieval, and current server data remain network dependent unless a separately engineered on-device capability is added.</p>
+</div>
+<div>
+<p>The platform targets WCAG 2.1 Level AA with semantic HTML, keyboard access, appropriate contrast, accessible media alternatives, and persistent accessibility controls. The RPwD Act includes statutory provisions concerning access to information and communication technology [28]. Automated axe-core checks and manual assistive-technology testing are planned; current conformance is not claimed.</p>
+</div>
+</div>
+<div class="footer">Page <span class="page-num">9</span></div>
+</section>
+
+<!-- PAGE 10 -->
+<section class="page">
+<div class="section">VI. Validation, Discussion, and Threats to Validity</div>
+<div class="subsection">A. Validation Plan</div>
+<table>
+<tr><th>Module</th><th>Evaluation set</th><th>Primary metrics</th><th>Evidence required</th></tr>
+<tr><td>RAG chatbot</td><td>Expert-authored multilingual Q&amp;A set with gold evidence passages</td><td>Answer correctness, retrieval recall, citation precision, abstention, per-language results</td><td>Repeatable benchmark and error analysis by language/topic.</td></tr>
+<tr><td>Trip Planner</td><td>Expert itineraries plus route/fee/hour validation cases</td><td>Constraint satisfaction, factuality, route feasibility, travel-time error</td><td>Comparison against expert-curated plans and explicit scoring rubric.</td></tr>
+<tr><td>WebXR AR</td><td>Site tests across texture, lighting, device, and motion conditions</td><td>Placement error, tracking-loss rate, relocalisation time, task completion</td><td>Device/site matrix with repeatable trials.</td></tr>
+<tr><td>Crowd counting</td><td>Annotated heritage images/video across density and viewpoint ranges</td><td>MAE, RMSE, calibration, latency</td><td>Local benchmark showing transfer from generic datasets.</td></tr>
+<tr><td>Forecasting</td><td>Site-level historical visitor series with holidays/weather/search variables</td><td>MAE, RMSE, sMAPE, interval coverage</td><td>Comparison against seasonal-naïve and classical baselines.</td></tr>
+<tr><td>PWA</td><td>Controlled intermittent/offline tests on representative devices</td><td>Cache-hit rate, startup time, task completion, storage footprint</td><td>Measured degraded-network behaviour.</td></tr>
+<tr><td>Accessibility</td><td>Automated + manual WCAG audit with assistive technologies</td><td>Success-criterion conformance</td><td>Documented audit results, defects, and remediation.</td></tr>
+</table>
+
+<div class="subsection">B. Preliminary Implementation Evidence</div>
+<div class="grid2">
+<div>
+<p>The Trip Planner's 47-query test is useful as an implementation smoke test. It demonstrates that natural-language preferences can be connected to geocoding, route generation, structured itinerary rendering, and persistence in the current codebase. It does not establish that the generated itineraries are optimal, safe, factually complete, culturally sensitive, or preferred by users.</p>
+</div>
+<div>
+<p>The proposed Mediasoup architecture is expected to scale horizontally, but no controlled load test has yet been completed. Any capacity number therefore remains a design estimate. Likewise, the proposed crowd, RAG, WebXR, and offline modules have no published Indian-heritage benchmark in this manuscript.</p>
+</div>
+</div>
+
+<div class="subsection">C. Scalability Estimate</div>
+<div class="box"><strong>Design estimate only:</strong> an initial architecture-level estimate of roughly ten c5.xlarge-class instances for approximately 500 simultaneous live-tour sessions is retained only to motivate load-testing requirements. It is <strong>not</strong> presented as measured capacity or an operational guarantee.</div>
+
+<div class="subsection">D. Threats to Validity</div>
+<ul>
+<li><b>Search coverage:</b> the review is structured but not exhaustive; per-database screening counts were not retained.</li>
+<li><b>Context transfer:</b> several empirical studies concern museums, urban crowds, or non-Indian tourist attractions rather than ASI monuments.</li>
+<li><b>Platform volatility:</b> product features can change; any future platform comparison should be date-stamped and archived.</li>
+<li><b>Implementation scope:</b> only the Trip Planner has current functional evidence; the remaining modules are specifications or prototypes.</li>
+<li><b>Heritage governance:</b> historical interpretation may contain contested or incomplete evidence; source provenance and curatorial review are essential.</li>
+<li><b>Generalisation:</b> performance measured on one site, language, device, or network condition should not be presented as universal platform performance.</li>
+</ul>
+
+<div class="fig small"><img src="assets/explore.jpg" alt="Explore Heritage Sites interface"/><div class="caption">Fig. 4. Heritage-discovery interface used as the implementation context for the proposed architecture.</div></div>
+<div class="footer">Page <span class="page-num">10</span></div>
+</section>
+
+<!-- PAGE 11 -->
+<section class="page">
+<div class="section">VII. Conclusion</div>
+<p class="noindent">This structured literature review finds converging evidence for immersive heritage experiences, browser-based XR, WebRTC-based real-time communication, retrieval-augmented generation, museum-oriented LLM applications, computer-vision crowd counting, tourism forecasting, and offline-capable web delivery [3]–[31]. The evidence is not uniform: some components have long-standing empirical literatures, whereas others are relatively recent or highly context dependent.</p>
+<p class="noindent">The review does not support the claim that any individual technology is novel. Instead, the proposed contribution is an evidence-bounded integration architecture for Indian cultural-heritage tourism, coupled with explicit validation requirements. Four gaps were retained because the reviewed corpus did not establish a common end-to-end solution for multimodal continuity, validated multilingual RAG in Indic heritage dialogue, integrated real-time and predictive visitor analytics, or comprehensive offline-first heritage delivery.</p>
+<p class="noindent">The implementation evidence is intentionally limited. The AI Trip Planner demonstrates functional integration of language-based preference extraction, geocoding, routing, itinerary rendering, and persistence, with preliminary structural testing on 47 queries. It does not establish overall platform effectiveness. RAG quality, per-language performance, AR robustness, crowd-counting accuracy, forecasting accuracy, scalability, accessibility conformance, and privacy governance remain future evaluation tasks.</p>
+<p class="noindent">The resulting research agenda is measurable: establish expert-grounded heritage evaluation sets; benchmark RAG retrieval and citation quality; evaluate language performance separately; collect site-specific crowd data; compare forecasting models against simple baselines; test immersive tracking across representative conditions; run degraded-network trials; and complete human-centred accessibility and curatorial assessments. This separation between established literature, proposed architecture, and measured implementation is central to the manuscript's evidentiary integrity.</p>
+
+<div class="subsection">Selected Implementation Evidence</div>
+<div class="grid2">
+<div class="fig small"><img src="assets/immersive.jpg" alt="Immersive experiences interface"/><div class="caption">Fig. 5. Prototype immersive-experience interface. Proposed modalities are shown as implementation context; module-level validation remains future work.</div></div>
+<div class="fig small"><img src="assets/login.jpg" alt="Authentication interface"/><div class="caption">Fig. 6. Authentication interface. Security properties beyond the visible access flow require dedicated security testing.</div></div>
+</div>
+
+<div class="footer">Page <span class="page-num">11</span></div>
+</section>
+
+<!-- PAGE 12 -->
+<section class="page refpage">
+<div class="section">References</div>
+<div class="refs">
+<div class="ref">[1] Government of India, Ministry of Culture, “Unstarred Question No. 808: Untraceable/Missing Monuments,” Rajya Sabha, 9 Feb. 2023. [Online]. Available: https://sansad.in/getFile/annex/259/AU808.pdf</div>
+<div class="ref">[2] UNESCO, “Convention Concerning the Protection of the World Cultural and Natural Heritage,” Paris, 1972. [Online]. Available: https://whc.unesco.org/en/conventiontext</div>
+<div class="ref">[3] M. K. Bekele, R. Pierdicca, E. Frontoni, E. S. Malinverni, and J. Gain, “A Survey of Augmented, Virtual, and Mixed Reality for Cultural Heritage,” <em>Journal on Computing and Cultural Heritage</em>, vol. 11, no. 2, 2018, doi:10.1145/3145534.</div>
+<div class="ref">[4] T. Jung, M. C. tom Dieck, H. Lee, and N. Chung, “Effects of Virtual Reality and Augmented Reality on Visitor Experiences in Museum,” in <em>Information and Communication Technologies in Tourism 2016</em>, Springer, 2016, pp. 621–635, doi:10.1007/978-3-319-28231-2_45.</div>
+<div class="ref">[5] M. Speicher, B. D. Hall, and M. Nebeling, “What Is Mixed Reality?,” in <em>Proc. CHI Conference on Human Factors in Computing Systems</em>, 2019, Art. no. 537, doi:10.1145/3290605.3300767.</div>
+<div class="ref">[6] C. F. Tsai, “Using Head-Mounted Displays for Virtual Reality: A Review,” <em>Sensors</em>, vol. 20, no. 9, 2502, 2020.</div>
+<div class="ref">[7] A. Gaitatzes, D. Christopoulos, and M. Roussou, “Reviving the Past: Cultural Heritage Meets Virtual Reality,” in <em>Proc. ACM VRST</em>, 2001, pp. 103–111.</div>
+<div class="ref">[8] G. Papagiannakis, G. Singh, and N. Magnenat-Thalmann, “A Survey of Mobile and Wireless Technologies for Augmented Reality Systems,” <em>Computer Animation and Virtual Worlds</em>, vol. 19, no. 1, pp. 3–22, 2008, doi:10.1002/cav.221.</div>
+<div class="ref">[9] W3C Immersive Web Working Group, “WebXR Device API,” 16 Apr. 2024 publication history. [Online]. Available: https://www.w3.org/standards/history/webxr/</div>
+<div class="ref">[10] H. Alvestrand, “Overview: Real-Time Protocols for Browser-Based Applications,” IETF RFC 8825, Jan. 2021. [Online]. Available: https://www.rfc-editor.org/rfc/rfc8825.html</div>
+<div class="ref">[11] P. Lewis, E. Perez, A. Piktus, et al., “Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks,” in <em>Advances in Neural Information Processing Systems 33</em>, pp. 9459–9474, 2020.</div>
+<div class="ref">[12] D. Kakwani, A. Kunchukuttan, S. Golla, et al., “IndicNLPSuite: Monolingual Corpora, Evaluation Benchmarks and Pre-trained Multilingual Language Models for Indian Languages,” <em>Findings of EMNLP 2020</em>, pp. 4948–4961, 2020, doi:10.18653/v1/2020.findings-emnlp.445.</div>
+<div class="ref">[13] G. M. Majid, I. Tussyadiah, Y. R. Kim, and A. Pal, “Intelligent automation for sustainable tourism: A systematic review,” <em>Journal of Sustainable Tourism</em>, vol. 31, no. 11, pp. 2421–2440, 2023, doi:10.1080/09669582.2023.2246681.</div>
+<div class="ref">[14] M.-Á. García-Madurga and A.-J. Grilló-Méndez, “Artificial Intelligence in the Tourism Industry: An Overview of Reviews,” <em>Administrative Sciences</em>, vol. 13, no. 8, 172, 2023, doi:10.3390/admsci13080172.</div>
+<div class="ref">[15] A. Borrego, A. Lancho, L. Moral-García, and J. T. Fernández-Breis, “Exploiting LOD and knowledge graphs for cultural heritage recommendation: A survey and a case study for Spanish museums,” <em>Semantic Web</em>, vol. 14, no. 5, pp. 895–925, 2023, doi:10.3233/SW-223087.</div>
+<div class="ref">[16] A. Bordes, N. Usunier, A. Garcia-Duran, J. Weston, and O. Yakhnenko, “Translating Embeddings for Modeling Multi-relational Data,” in <em>Advances in Neural Information Processing Systems 26</em>, pp. 2787–2795, 2013.</div>
+<div class="ref">[17] G. Trichopoulos, M. Konstantakis, G. Caridakis, A. Katifori, and M. Koukouli, “Crafting a Museum Guide Using ChatGPT4,” <em>Big Data and Cognitive Computing</em>, vol. 7, no. 3, 148, 2023, doi:10.3390/bdcc7030148.</div>
+<div class="ref">[18] G. Trichopoulos, M. Konstantakis, G. Alexandridis, and G. Caridakis, “Large Language Models as Recommendation Systems in Museums,” <em>Electronics</em>, vol. 12, no. 18, 3829, 2023, doi:10.3390/electronics12183829.</div>
+<div class="ref">[19] A. Vaswani, N. Shazeer, N. Parmar, et al., “Attention Is All You Need,” in <em>Advances in Neural Information Processing Systems 30</em>, pp. 5998–6008, 2017.</div>
+<div class="ref">[20] Y. Zhang, D. Zhou, S. Chen, S. Gao, and Y. Ma, “Single-Image Crowd Counting via Multi-Column Convolutional Neural Network,” in <em>Proc. CVPR 2016</em>, pp. 589–597.</div>
+<div class="ref">[21] Y. Li, X. Zhang, and D. Chen, “CSRNet: Dilated Convolutional Neural Networks for Understanding the Highly Congested Scenes,” in <em>Proc. CVPR 2018</em>, pp. 1091–1100.</div>
+<div class="ref">[22] Z. Ma, X. Wei, X. Hong, and Y. Gong, “Bayesian Loss for Crowd Count Estimation With Point Supervision,” in <em>Proc. ICCV 2019</em>, pp. 6142–6151.</div>
+<div class="ref">[23] P. Spachos and K. N. Plataniotis, “BLE Beacons for Indoor Positioning at an Interactive IoT-Based Smart Museum,” <em>IEEE Systems Journal</em>, vol. 14, no. 3, pp. 3483–3493, 2020, doi:10.1109/JSYST.2020.2969088.</div>
+<div class="ref">[24] J.-W. Bi, Y. Liu, and H. Li, “Daily Tourism Volume Forecasting for Tourist Attractions,” <em>Annals of Tourism Research</em>, vol. 83, 102923, 2020, doi:10.1016/j.annals.2020.102923.</div>
+<div class="ref">[25] S. J. Taylor and B. Letham, “Forecasting at Scale,” <em>The American Statistician</em>, vol. 72, no. 1, pp. 37–45, 2018.</div>
+<div class="ref">[26] Google Developers, “Service worker overview” and “Strategies for service worker caching,” Chrome for Developers / Workbox documentation. [Online]. Available: https://developer.chrome.com/docs/workbox/service-worker-overview</div>
+<div class="ref">[27] Government of India, “The Rights of Persons with Disabilities Act, 2016,” Ministry of Law and Justice, Dec. 2016. [Online]. Available: https://www.indiacode.nic.in/handle/123456789/13684</div>
+<div class="ref">[28] W3C, “Web Content Accessibility Guidelines (WCAG) 2.1,” W3C Recommendation, 2018. [Online]. Available: https://www.w3.org/TR/WCAG21/</div>
+<div class="ref">[29] Government of India, “Digital Personal Data Protection Act, 2023,” Act No. 22 of 2023. [Online]. Available: https://www.indiacode.nic.in/bitstream/123456789/22037/2/a2023-22.pdf</div>
+<div class="ref">[30] M. Mishra and P. B. Lourenço, “Artificial intelligence-assisted visual inspection for cultural heritage: State-of-the-art review,” <em>Journal of Cultural Heritage</em>, vol. 66, pp. 536–550, 2024, doi:10.1016/j.culher.2024.01.005.</div>
+<div class="ref">[31] S. Münster, F. Maiwald, I. di Lenardo, J. Henriksson, A. Isaac, M. M. Graf, C. Beck, and J. Oomen, “Artificial Intelligence for Digital Heritage Innovation: Setting up a R&amp;D Agenda for Europe,” <em>Heritage</em>, vol. 7, no. 2, pp. 794–816, 2024, doi:10.3390/heritage7020038.</div>
+</div>
+<div class="tnote">Bibliography checked for sequential numbering, bibliographic consistency, source provenance, and compatibility with the paper’s June 2024 evidence boundary.</div>
+<div class="footer">Page <span class="page-num">12</span></div>
+</section>
+
+</div>
+</body>
+</html>
