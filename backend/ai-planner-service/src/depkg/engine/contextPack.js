@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { DEPKGTraveller, DEPKGPreferenceSnapshot, DEPKGEpisode, HeritageSite } = require('../models/depkgModels');
 const { parseDestinationScope } = require('../../services/heritageKnowledge');
+const { getExperienceContextForPlanner } = require('../../services/depkgGraphBridge');
 const config = require('../config/default');
 
 const REGION_MAP = { hampi:'Karnataka',mysore:'Karnataka',belur:'Karnataka',halebidu:'Karnataka',badami:'Karnataka',pattadakal:'Karnataka',aihole:'Karnataka',bangalore:'Karnataka',bengaluru:'Karnataka',thanjavur:'Tamil Nadu',madurai:'Tamil Nadu',mahabalipuram:'Tamil Nadu',mamallapuram:'Tamil Nadu',chennai:'Tamil Nadu',kanchipuram:'Tamil Nadu',jaipur:'Rajasthan',jodhpur:'Rajasthan',jaisalmer:'Rajasthan',udaipur:'Rajasthan',pushkar:'Rajasthan',agra:'Uttar Pradesh','fatehpur sikri':'Uttar Pradesh',varanasi:'Uttar Pradesh',lucknow:'Uttar Pradesh',delhi:'Delhi','new delhi':'Delhi',aurangabad:'Maharashtra',ajanta:'Maharashtra',ellora:'Maharashtra',pune:'Maharashtra',mumbai:'Maharashtra',goa:'Goa',patan:'Gujarat',modhera:'Gujarat',ahmedabad:'Gujarat',konark:'Odisha',puri:'Odisha',bhubaneswar:'Odisha',spiti:'Himachal Pradesh',manali:'Himachal Pradesh',bishnupur:'West Bengal',kolkata:'West Bengal',kochi:'Kerala',thiruvananthapuram:'Kerala' };
@@ -64,6 +65,34 @@ async function buildContextPack(travellerId, { destination, region, duration, in
     })));
   }
 
+  // Merge live DEPKG Experience Graph (works both online & offline, with full explainability + episodic context!)
+  let experienceGraph = null;
+  let driftWarnings = [];
+  let compressedExperienceContext = '';
+  if (includePersonalization && travellerId && travellerId !== 'anonymous') {
+    try {
+      experienceGraph = await getExperienceContextForPlanner(travellerId);
+      if (experienceGraph) {
+        const mergeUnique = (base, incoming) => {
+          const out = [...base];
+          for (const item of incoming || []) {
+            if (!out.some((x) => String(x.value || '').toLowerCase() === String(item.value || '').toLowerCase() && x.dimension === item.dimension)) {
+              out.push(item);
+            }
+          }
+          return out;
+        };
+        likedPrefs = mergeUnique(likedPrefs, experienceGraph.liked || []).slice(0, config.CONTEXT_TOP_K_PREFS);
+        avoidedPrefs = mergeUnique(avoidedPrefs, experienceGraph.avoided || []).slice(0, 8);
+        driftWarnings = experienceGraph.evolution || [];
+        compressedExperienceContext = experienceGraph.compressedContext || '';
+        totalTrips = Math.max(totalTrips, (experienceGraph.knowledgeLayers?.experiences || []).length);
+      }
+    } catch (expErr) {
+      console.warn('[contextPack] Experience graph load warning:', expErr.message);
+    }
+  }
+
   const hasPersonalizationData = !!(likedPrefs.length || avoidedPrefs.length);
   return {
     metadata: {
@@ -80,7 +109,10 @@ async function buildContextPack(travellerId, { destination, region, duration, in
     travelerPreferences: {
       liked: likedPrefs,
       avoided: avoidedPrefs,
-      driftWarnings: [],
+      inferences: experienceGraph?.knowledgeLayers?.inferences || [],
+      episodicEvidence: (experienceGraph?.knowledgeLayers?.experiences || []).slice(-6),
+      driftWarnings,
+      compressedExperienceContext,
     },
     planningContext: { duration, groupSize: groupSize || 1, requestedInterests: interests || [] },
   };

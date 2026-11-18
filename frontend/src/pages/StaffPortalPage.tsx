@@ -2,10 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 
-// Ensure the API url is pulled correctly. We'll use the Render API or fallback to localhost.
-const API_BASE_URL = import.meta.env.VITE_AI_PLANNER_API_URL 
-  ? import.meta.env.VITE_AI_PLANNER_API_URL
-  : 'http://localhost:5002/api';
+// Ensure the API url is pulled correctly. Use Vite proxy /api by default so local dev works seamlessly.
+const API_BASE_URL = import.meta.env.VITE_AI_PLANNER_API_URL || '/api';
 
 interface ScannedHistoryItem {
   id: string;
@@ -170,14 +168,17 @@ const StaffPortalPage: React.FC = () => {
     let ticketIdToScan = rawCode.trim();
     if (!ticketIdToScan) return;
 
-    // Try parsing if payload is JSON: { ticketId: '...' }
+    // Try parsing if payload is JSON: { bookingId / ticketId } or verification URL
     try {
       const parsed = JSON.parse(ticketIdToScan);
-      if (parsed.ticketId) {
-        ticketIdToScan = parsed.ticketId;
+      if (parsed.bookingId || parsed.ticketId) {
+        ticketIdToScan = parsed.bookingId || parsed.ticketId;
       }
     } catch {
-      // Raw string ID
+      const urlMatch = ticketIdToScan.match(/\/verify\/([A-Za-z0-9_-]+)/);
+      if (urlMatch) {
+        ticketIdToScan = urlMatch[1];
+      }
     }
 
     setScanStatus('loading');

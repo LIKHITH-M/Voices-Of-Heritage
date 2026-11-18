@@ -366,6 +366,7 @@ export default function ActivityTicketingPage() {
   // New state for real Razorpay integration + My Bookings
   const [bookingConfirmed, setBookingConfirmed] = useState<any>(null);
   const [paymentError,     setPaymentError]     = useState('');
+  const [paymentStatusNote, setPaymentStatusNote] = useState('');
   const [myBookings,       setMyBookings]       = useState<any[]>([]);
   const [myBookingsLoading, setMyBookingsLoading] = useState(false);
 
@@ -494,21 +495,59 @@ export default function ActivityTicketingPage() {
     });
   };
 
+  /* ── Helper to build QR screen from confirmed backend booking ── */
+  const openConfirmedTicket = useCallback(async (confirmedBooking: any, act: Activity, f: BookingForm, totalINR: number) => {
+    setBookingConfirmed(confirmedBooking);
+    const ticketId = confirmedBooking.bookingId || confirmedBooking.ticketId;
+    const qrPayload = confirmedBooking.qrData || JSON.stringify({ bookingId: ticketId, ticketId });
+    const qrImageUrl = await QRCode.toDataURL(qrPayload, {
+      width: 280, margin: 2,
+      color: { dark: '#050505', light: '#fffbe6' },
+      errorCorrectionLevel: 'H',
+    });
+    setBooking({
+      id: ticketId,
+      activity: act,
+      form: f,
+      totalINR,
+      createdAt: confirmedBooking.createdAt || new Date().toISOString(),
+      qrData: qrPayload,
+      qrImageUrl,
+    });
+    setStep('qr');
+  }, []);
+
   /* ── Razorpay Payment Handler ── */
   const handlePayment = useCallback(async () => {
     if (!selectedAct) return;
     setGenerating(true);
     setPaymentError('');
+    setPaymentStatusNote('');
 
     const total = calcTotal(selectedAct, form);
     const userId = localStorage.getItem('voh_user_id') || 'guest';
 
     try {
-      // 1. Create order on backend
+      // 1. Create pending booking & Razorpay order in persistent backend database
       const { data } = await axios.post('/api/bookings/create-order', {
         userId,
         monumentId: selectedAct.id,
         monumentName: selectedAct.name,
+        site: selectedAct.site,
+        state: selectedAct.state,
+        category: selectedAct.category,
+        meetingPoint: selectedAct.meetingPoint,
+        scanPoint: selectedAct.scanPoint,
+        visitorName: form.name,
+        email: form.email,
+        phone: form.phone,
+        nationality: form.nationality,
+        idType: form.idType,
+        idNumber: form.idNumber,
+        adults: form.adults,
+        children: form.children,
+        seniors: form.seniors,
+        specialRequirements: form.specialRequirements,
         visitDate: form.visitDate,
         timeSlot: form.visitTime || selectedAct.schedule,
         ticketType: form.nationality === 'indian' ? 'indian' : 'nri',
@@ -516,111 +555,116 @@ export default function ActivityTicketingPage() {
         totalAmount: total,
       });
 
-      // 2. If total is 0 (free), skip Razorpay and verify directly
+      const createdBookingId = data.bookingId;
+
+      // 2. If total is 0 (free monument entry), verify & issue ticket directly
       if (total === 0) {
         const verify = await axios.post('/api/bookings/verify-payment', {
-          bookingId: data.bookingId,
-          razorpay_order_id: data.orderId || 'free_order',
-          razorpay_payment_id: 'free_payment',
-          razorpay_signature: 'free_signature',
+          bookingId: createdBookingId,
+          razorpay_order_id: data.orderId || 'order_free',
+          razorpay_payment_id: `FREE_${createdBookingId}`,
+          razorpay_signature: 'free_entry',
         });
-        const confirmedBooking = verify.data.booking;
-        setBookingConfirmed(confirmedBooking);
-
-        // Build local QR for display
-        const qrPayload = confirmedBooking.qrData || JSON.stringify({ bookingId: confirmedBooking.bookingId });
-        const qrImageUrl = await QRCode.toDataURL(qrPayload, {
-          width: 280, margin: 2,
-          color: { dark: '#050505', light: '#fffbe6' },
-          errorCorrectionLevel: 'H',
-        });
-        setBooking({
-          id: confirmedBooking.bookingId,
-          activity: selectedAct,
-          form,
-          totalINR: 0,
-          createdAt: confirmedBooking.createdAt || new Date().toISOString(),
-          qrData: qrPayload,
-          qrImageUrl,
-        });
+        await openConfirmedTicket(verify.data.booking, selectedAct, form, 0);
         setGenerating(false);
-        setStep('confirmation');
         return;
       }
 
-      // 3. Load Razorpay SDK
+      // 3. Load Razorpay Checkout SDK
       const loaded = await loadRazorpay();
       if (!loaded) {
-        throw new Error('Failed to load Razorpay SDK. Check your network connection.');
+        await axios.patch(`/api/bookings/${createdBookingId}/status`, {
+          paymentStatus: 'failed',
+          failureReason: 'Razorpay SDK failed to load (network blocked or offline).',
+          paymentErrorCode: 'SDK_LOAD_ERROR',
+        }).catch(() => {});
+        throw new Error('Failed to load Razorpay SDK. Check your internet connection and retry.');
       }
 
-      // 4. Open Razorpay checkout
-      const options = {
-        key: 'rzp_test_ToUXkFkXqdjYh8',
+      // 4. Open Razorpay test checkout using test key rzp_test_ToUXkFkXqdjYh8
+      let paymentHandled = false;
+      const options: Record<string, any> = {
+        key: data.keyId || 'rzp_test_ToUXkFkXqdjYh8',
         amount: data.amount,
         currency: data.currency || 'INR',
         name: 'Voices of Heritage',
-        description: `Visit to ${selectedAct.name}`,
-        order_id: data.orderId,
+        description: `ASI Ticket: ${selectedAct.name}`,
+        notes: {
+          bookingId: createdBookingId,
+          monument: selectedAct.name,
+          visitDate: form.visitDate,
+        },
         handler: async (response: any) => {
+          paymentHandled = true;
           try {
-            // 5. Verify payment on backend
             const verify = await axios.post('/api/bookings/verify-payment', {
-              bookingId: data.bookingId,
-              razorpay_order_id: response.razorpay_order_id,
+              bookingId: createdBookingId,
+              razorpay_order_id: response.razorpay_order_id || data.orderId,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
+              razorpay_signature: response.razorpay_signature || '',
             });
-            const confirmedBooking = verify.data.booking;
-            setBookingConfirmed(confirmedBooking);
-
-            const qrPayload = confirmedBooking.qrData || JSON.stringify({ bookingId: confirmedBooking.bookingId });
-            const qrImageUrl = await QRCode.toDataURL(qrPayload, {
-              width: 280, margin: 2,
-              color: { dark: '#050505', light: '#fffbe6' },
-              errorCorrectionLevel: 'H',
-            });
-            setBooking({
-              id: confirmedBooking.bookingId,
-              activity: selectedAct,
-              form,
-              totalINR: total,
-              createdAt: confirmedBooking.createdAt || new Date().toISOString(),
-              qrData: qrPayload,
-              qrImageUrl,
-            });
-            setStep('confirmation');
+            await openConfirmedTicket(verify.data.booking, selectedAct, form, total);
           } catch (err: any) {
-            setPaymentError('Payment verified but booking failed. Contact support.');
+            setPaymentError(err?.response?.data?.error || 'Payment completed, but verification failed. Reference ID: ' + createdBookingId);
+          } finally {
+            setGenerating(false);
           }
         },
-        prefill: { name: form.name || 'Heritage Traveller', email: form.email, contact: form.phone },
+        prefill: {
+          name: form.name || 'Heritage Traveller',
+          email: form.email,
+          contact: form.phone,
+        },
         theme: { color: '#d97706' },
-        modal: { ondismiss: () => setGenerating(false) },
+        modal: {
+          ondismiss: async () => {
+            if (!paymentHandled) {
+              await axios.patch(`/api/bookings/${createdBookingId}/status`, {
+                paymentStatus: 'cancelled',
+                failureReason: 'Payment cancelled by visitor in Razorpay checkout.',
+                paymentErrorCode: 'USER_CANCELLED',
+              }).catch(() => {});
+              setPaymentStatusNote(`Payment cancelled (Booking ${createdBookingId} marked as Cancelled). You can retry anytime.`);
+              setGenerating(false);
+            }
+          },
+        },
       };
 
+      // Only pass server-created Razorpay order_id when it's a real Razorpay order (not test-key-only mock ID)
+      if (!data.isMock && data.orderId) {
+        options.order_id = data.orderId;
+      }
+
       const rzp = new (window as any).Razorpay(options);
-      rzp.on('payment.failed', (_resp: any) => {
-        setPaymentError('Payment failed. Please try again.');
+      rzp.on('payment.failed', async (resp: any) => {
+        paymentHandled = true;
+        const desc = resp?.error?.description || 'Payment failed in Razorpay checkout.';
+        const code = resp?.error?.code || 'PAYMENT_FAILED';
+        await axios.patch(`/api/bookings/${createdBookingId}/status`, {
+          paymentStatus: 'failed',
+          failureReason: desc,
+          paymentErrorCode: code,
+          razorpayPaymentId: resp?.error?.metadata?.payment_id || '',
+        }).catch(() => {});
+        setPaymentError(`Payment Failed: ${desc} (Ref: ${createdBookingId}). Please retry.`);
         setGenerating(false);
       });
       rzp.open();
-      setGenerating(false);
     } catch (err: any) {
       console.error('Payment error:', err);
-      setPaymentError(err.message || 'Failed to initiate payment. Ensure backend is running.');
+      setPaymentError(err?.response?.data?.error || err.message || 'Failed to initiate payment. Ensure backend is running.');
       setGenerating(false);
     }
-  }, [selectedAct, form]);
+  }, [selectedAct, form, openConfirmedTicket]);
 
   /* ── Fetch My Bookings ── */
   const fetchMyBookings = useCallback(async () => {
-    const userId = localStorage.getItem('voh_user_id');
-    if (!userId) return;
+    const userId = localStorage.getItem('voh_user_id') || 'guest';
     setMyBookingsLoading(true);
     try {
       const { data } = await axios.get(`/api/bookings/user/${userId}`);
-      setMyBookings(data.bookings || data || []);
+      setMyBookings(Array.isArray(data) ? data : data.bookings || []);
     } catch (err) {
       console.error('Failed to fetch bookings:', err);
     }
@@ -995,14 +1039,25 @@ export default function ActivityTicketingPage() {
             <ul className="at-includes-list">
               {selectedAct.includes.map((item, i) => <li key={i}>{item}</li>)}
             </ul>
+
+            {paymentError && (
+              <div style={{ marginTop: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#f87171', fontSize: '.82rem', fontWeight: 600 }}>
+                ⚠️ {paymentError}
+              </div>
+            )}
+            {paymentStatusNote && (
+              <div style={{ marginTop: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: C.amber, fontSize: '.82rem', fontWeight: 600 }}>
+                ℹ️ {paymentStatusNote}
+              </div>
+            )}
           </div>
 
           <div className="at-modal-foot">
             <button className="at-btn-ghost" onClick={() => setStep('list')}>Cancel</button>
             <button className="at-btn-primary" disabled={!formValid || generating} onClick={handlePayment}>
               {generating
-                ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'at-spin 1s linear infinite' }} /> Generating…</>
-                : '🎟️ Generate QR Ticket'}
+                ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'at-spin 1s linear infinite' }} /> Processing…</>
+                : total === 0 ? '🎟️ Confirm Free Ticket' : `💳 Pay ₹${total.toLocaleString('en-IN')} with Razorpay`}
             </button>
           </div>
         </div>
@@ -1032,10 +1087,13 @@ export default function ActivityTicketingPage() {
           {/* Details */}
           <div className="at-qr-details">
             {[
-              ['Date', booking.form.visitDate],
+              ['Visitor', booking.form.name],
+              ['Date & Slot', `${booking.form.visitDate}${booking.form.visitTime ? ' · ' + booking.form.visitTime : ''}`],
               ['Visitors', `${booking.form.adults} Adult${booking.form.adults > 1 ? 's' : ''} ${booking.form.children > 0 ? `+ ${booking.form.children} Child` : ''} ${booking.form.seniors > 0 ? `+ ${booking.form.seniors} Senior` : ''}`],
               ['Nationality', booking.form.nationality === 'indian' ? '🇮🇳 Indian Citizen' : '🌍 NRI / Foreign'],
               ['Total Paid', booking.totalINR === 0 ? '🎉 Free Entry' : `₹${booking.totalINR.toLocaleString('en-IN')}`],
+              ['Payment Status', (bookingConfirmed?.paymentStatus || 'paid').toUpperCase()],
+              ...(bookingConfirmed?.razorpayPaymentId ? [['Transaction Ref', bookingConfirmed.razorpayPaymentId]] : []),
               ['Meeting Point', booking.activity.meetingPoint.split(',')[0]],
             ].map(([k, v]) => (
               <div key={k} className="at-qr-detail-row">
@@ -1148,6 +1206,12 @@ export default function ActivityTicketingPage() {
         
         <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
           <button
+            className="at-back-btn"
+            onClick={() => { fetchMyBookings(); setStep('my-bookings'); }}
+          >
+            🎟️ My Bookings
+          </button>
+          <button
             style={{
               padding: '.35rem 1rem', borderRadius: '8px',
               background: 'linear-gradient(135deg,var(--voh-amber,#f59e0b),var(--voh-gold,#d97706))',
@@ -1216,9 +1280,85 @@ export default function ActivityTicketingPage() {
           </div>
         )}
 
-        {step === 'qr' && (
+        {(step === 'qr' || step === 'confirmation') && (
           <div className="at-content">
             {renderQRScreen()}
+          </div>
+        )}
+
+        {step === 'my-bookings' && (
+          <div className="at-content">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: '1.4rem', margin: 0 }}>My Monument Tickets &amp; Bookings</h2>
+                <p style={{ color: C.muted, fontSize: '.82rem', margin: '4px 0 0' }}>Persisted booking records with payment status &amp; QR verification</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="at-btn-ghost" onClick={fetchMyBookings}>🔄 Refresh</button>
+                <button className="at-btn-primary" onClick={() => setStep(selectedSite ? 'list' : 'search')}>+ Book Monument</button>
+              </div>
+            </div>
+
+            {myBookingsLoading ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: C.muted }}>Loading your bookings…</div>
+            ) : myBookings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', background: C.surface, borderRadius: '16px', border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🎟️</div>
+                <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>No monument bookings yet</div>
+                <p style={{ color: C.muted, fontSize: '.85rem', marginBottom: '1.25rem' }}>Select a heritage site above to book official ASI entry tickets.</p>
+                <button className="at-btn-primary" onClick={() => setStep('search')}>Browse Sites</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {myBookings.map((b: any) => {
+                  const statusColor =
+                    b.paymentStatus === 'paid' ? C.green :
+                    b.paymentStatus === 'failed' ? C.red :
+                    b.paymentStatus === 'cancelled' ? C.muted : C.amber;
+                  const id = b.bookingId || b.ticketId;
+                  return (
+                    <div key={id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '14px', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '1rem' }}>{b.monumentName || b.activityName}</span>
+                          <span style={{ fontSize: '.68rem', fontWeight: 800, textTransform: 'uppercase', padding: '2px 10px', borderRadius: '20px', background: `${statusColor}20`, color: statusColor, border: `1px solid ${statusColor}44` }}>
+                            {b.paymentStatus}
+                          </span>
+                          {b.ticketStatus === 'scanned' && (
+                            <span style={{ fontSize: '.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: 'rgba(59,130,246,0.15)', color: '#60a5fa' }}>
+                              ✓ Scanned
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '.78rem', color: C.muted }}>
+                          🆔 <span style={{ fontFamily: 'monospace' }}>{id}</span> · 📅 {b.visitDate} · 👥 {b.numTickets || 1} visitor(s) · ₹{(b.totalAmount ?? b.totalINR ?? 0).toLocaleString('en-IN')}
+                        </div>
+                        {b.razorpayPaymentId && (
+                          <div style={{ fontSize: '.72rem', color: C.muted, marginTop: '3px' }}>
+                            Payment Ref: <span style={{ fontFamily: 'monospace' }}>{b.razorpayPaymentId}</span>
+                          </div>
+                        )}
+                        {b.failureReason && (
+                          <div style={{ fontSize: '.74rem', color: C.red, marginTop: '4px' }}>
+                            Reason: {b.failureReason}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {b.paymentStatus === 'paid' && (
+                          <Link
+                            to={`/verify/${id}`}
+                            style={{ padding: '.5rem 1rem', borderRadius: '8px', background: 'rgba(217,156,83,0.15)', color: C.gold, border: `1px solid ${C.gold}44`, textDecoration: 'none', fontSize: '.78rem', fontWeight: 700 }}
+                          >
+                            🔍 Verify / View Ticket
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

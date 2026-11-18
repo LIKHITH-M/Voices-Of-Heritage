@@ -1,0 +1,47 @@
+{
+  "1meKAu3L6PdCMIU4N1XluE2PVGX2": {
+    "userId": "1meKAu3L6PdCMIU4N1XluE2PVGX2",
+    "updatedAt": "2026-11-18T12:45:28.041Z",
+    "knowledgeLayers": {
+      "facts": [
+        {
+          "type": "fact",
+          "subject": "1meKAu3L6PdCMIU4N1XluE2PVGX2",
+          "predicate": "different_from_planned",
+          "object": "Virupaksha Temple & Inverted Pin-Hole Chamber",
+          "tripId": "6afd9c45595f4b50f2e61122",
+          "destination": "Mysore, Belur",
+          "experienceType": "place",
+          "timestamp": "2026-11-18T12:43:58.409Z"
+        },
+        {
+          "type": "fact",
+          "subject": "1meKAu3L6PdCMIU4N1XluE2PVGX2",
+          "predicate": "visited",
+          "object": "Mysore",
+          "tripId": "6afd9c45595f4b50f2e61122",
+          "destination": "Mysore",
+          "experienceType": "trip",
+          "timestamp": "2026-11-26T00:00:00.000Z"
+        },
+        {
+          "type": "fact",
+          "subject": "1meKAu3L6PdCMIU4N1XluE2PVGX2",
+          "predicate": "visited",
+          "object": "Vittala Temple Complex — Entry Ticket",
+          "tripId": null,
+          "destination": "Hampi",
+          "experienceType": "booking",
+          "timestamp": "2027-11-19T00:00:00.000Z"
+        }
+      ],
+      "experiences": [],
+      "preferences": [],
+      "inferences": []
+    },
+    "liked": [],
+    "avoided": [],
+    "evolution": [],
+    "compressedContext": ""
+  }
+}

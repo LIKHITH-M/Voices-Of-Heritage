@@ -30,6 +30,7 @@ import ArtisanMarketplacePage from '@/pages/ArtisanMarketplacePage';
 import CommunityPage from '@/pages/CommunityPage';
 import StaffPortalPage from '@/pages/StaffPortalPage';
 import TicketVerificationPage from '@/pages/TicketVerificationPage';
+import ExperiencesPage from '@/pages/ExperiencesPage';
 import RouteCompanion from '@/components/RouteCompanion';
 import AIChatBot from '@/components/AIChatBot';
 import MobileNav from '@/components/MobileNav';
@@ -95,6 +96,7 @@ export default function App() {
                   <Route path="/crowd-safety" element={<CrowdManagementPage />} />
                   <Route path="/partnerships" element={<PartnershipsPage />} />
                   <Route path="/archives" element={<DigitalArchivesPage />} />
+                  <Route path="/experiences" element={<ExperiencesPage />} />
                   <Route path="/bookings" element={<ActivityTicketingPage />} />
                   <Route path="/activity" element={<ActivityTicketingPage />} />
                   <Route path="/journal-planner" element={<TripPlannerPage />} />

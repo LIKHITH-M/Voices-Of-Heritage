@@ -418,13 +418,50 @@ export default function SmartStayPage() {
   const [bookingError, setBookingError] = useState('');
   const [bookingConfirmed, setBookingConfirmed] = useState<any>(null);
 
+  // Live hotel inventory state
+  const [liveProperties, setLiveProperties] = useState<StayProperty[]>([]);
+  const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
+  const [liveInventorySource, setLiveInventorySource] = useState<string>('');
+  const [liveInventoryLoading, setLiveInventoryLoading] = useState(false);
+
   // My Bookings state
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myBookingsLoading, setMyBookingsLoading] = useState(false);
   const [myBookingsError, setMyBookingsError] = useState('');
 
+  // Fetch live hotel inventory & real-time availability from backend
+  useEffect(() => {
+    let cancelled = false;
+    const loadInventory = async () => {
+      setLiveInventoryLoading(true);
+      try {
+        const dest = selectedDestination === 'All' ? 'Hampi' : selectedDestination;
+        const { data } = await axios.get(`/api/stays/inventory?destination=${encodeURIComponent(dest)}`);
+        if (!cancelled && data) {
+          setBookedCounts(data.bookedCountByHotel || {});
+          setLiveInventorySource(data.liveSource || '');
+          if (Array.isArray(data.liveProperties)) {
+            setLiveProperties(data.liveProperties);
+          }
+        }
+      } catch {
+        // Gracefully keep curated heritage stays if backend offline
+      } finally {
+        if (!cancelled) setLiveInventoryLoading(false);
+      }
+    };
+    loadInventory();
+    return () => { cancelled = true; };
+  }, [selectedDestination]);
+
+  // Merge curated heritage properties with live-fetched inventory (deduped by id)
+  const allProperties = [
+    ...verifiedProperties,
+    ...liveProperties.filter(lp => !verifiedProperties.some(vp => vp.id === lp.id)),
+  ];
+
   // Filter only items that have valid pictures
-  const filtered = verifiedProperties.filter(p => {
+  const filtered = allProperties.filter(p => {
     if (!p.image) return false;
     if (ecoFriendlyOnly && !p.isEco) return false;
     if (filterType !== 'All' && p.type !== filterType) return false;
@@ -442,12 +479,16 @@ export default function SmartStayPage() {
   };
 
   const handleBook = (p: StayProperty) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date();
+    dayAfter.setDate(dayAfter.getDate() + 3);
     setBookingModal(p);
     setBookingConfirmed(null);
     setBookingError('');
-    setCheckIn('');
-    setCheckOut('');
-    setRoomType('Standard');
+    setCheckIn(tomorrow.toISOString().split('T')[0]);
+    setCheckOut(dayAfter.toISOString().split('T')[0]);
+    setRoomType('Heritage Standard Room');
     setNumRooms(1);
     setNumGuests(2);
     setGuestName('');
@@ -460,17 +501,21 @@ export default function SmartStayPage() {
   const getNights = () => {
     if (!checkIn || !checkOut) return 0;
     const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+    return Math.max(0, Math.round(diff / (1000 * 60 * 60 * 24)));
   };
 
   const handleConfirmReservation = async () => {
     if (!bookingModal) return;
     if (!checkIn || !checkOut) { setBookingError('Please select check-in and check-out dates.'); return; }
-    if (!guestName.trim()) { setBookingError('Please enter guest name.'); return; }
-    if (!guestEmail.trim()) { setBookingError('Please enter guest email.'); return; }
     const nights = getNights();
-    if (nights <= 0) { setBookingError('Check-out must be after check-in.'); return; }
-    const totalAmount = bookingModal.price * numRooms * nights;
+    if (nights <= 0) { setBookingError('Check-out date must be after check-in date.'); return; }
+    if (!guestName.trim()) { setBookingError('Please enter guest full name.'); return; }
+    if (!guestEmail.trim() || !guestEmail.includes('@')) { setBookingError('Please enter a valid guest email.'); return; }
+
+    const subtotal = bookingModal.price * numRooms * nights;
+    const levy = Math.round(subtotal * 0.02);
+    const totalAmount = subtotal + levy;
+
     setBookingLoading(true);
     setBookingError('');
     try {
@@ -479,17 +524,34 @@ export default function SmartStayPage() {
         hotelId: bookingModal.id,
         hotelName: bookingModal.name,
         hotelCity: bookingModal.location,
-        checkIn, checkOut, roomType, numRooms, numGuests,
+        checkIn,
+        checkOut,
+        nights,
+        roomType,
+        numRooms,
+        numGuests,
         totalAmount,
-        guestName, guestEmail, guestPhone,
-        specialRequests,
+        guestName: guestName.trim(),
+        guestEmail: guestEmail.trim(),
+        guestPhone: guestPhone.trim(),
+        specialRequests: specialRequests.trim(),
         paymentMethod,
       });
       setBookingConfirmed(response.data.booking || response.data);
+      setBookedCounts(prev => ({ ...prev, [bookingModal.id]: (prev[bookingModal.id] || 0) + numRooms }));
     } catch (err: any) {
-      setBookingError(err?.response?.data?.message || 'Booking failed. Please try again.');
+      setBookingError(err?.response?.data?.message || err?.response?.data?.error || 'Booking failed. Please ensure backend is running.');
     } finally {
       setBookingLoading(false);
+    }
+  };
+
+  const handleCancelStay = async (bookingId: string) => {
+    try {
+      await axios.patch(`/api/stays/${bookingId}/cancel`);
+      setMyBookings(prev => prev.map(b => (b.bookingId === bookingId ? { ...b, paymentStatus: 'cancelled' } : b)));
+    } catch {
+      setMyBookingsError('Failed to cancel booking. Please try again.');
     }
   };
 
@@ -1310,12 +1372,87 @@ export default function SmartStayPage() {
                 <option value="Hampi">Hampi</option>
                 <option value="Gokarna">Gokarna</option>
                 <option value="Mysore">Mysore</option>
+                <option value="Jaipur">Jaipur</option>
+                <option value="Varanasi">Varanasi</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* Main Content Area */}
+        {mainTab === 'mybookings' ? (
+          <div style={{ maxWidth: '960px', width: '100%', margin: '0 auto', padding: '2rem', flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h1 className="stay-count-heading">My Heritage Stay Reservations</h1>
+                <p className="stay-count-sub">Persisted hotel &amp; homestay bookings with live status management</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
+                <button type="button" className="stay-details-btn" onClick={fetchMyBookings}>🔄 Refresh</button>
+                <button type="button" className="stay-primary-book-btn" onClick={() => setMainTab('stays')}>+ Browse Stays</button>
+              </div>
+            </div>
+
+            {myBookingsError && (
+              <div style={{ padding: '0.9rem 1rem', borderRadius: '10px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                ⚠️ {myBookingsError}
+              </div>
+            )}
+
+            {myBookingsLoading ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: C.muted }}>Loading your stay bookings...</div>
+            ) : myBookings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', background: C.card, borderRadius: '16px', border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🏨</div>
+                <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.4rem' }}>No Stay Bookings Yet</div>
+                <p style={{ color: C.muted, fontSize: '0.88rem', marginBottom: '1.25rem' }}>Explore our curated heritage homestays, eco-camps, and live hotels to reserve your stay.</p>
+                <button type="button" className="stay-primary-book-btn" onClick={() => setMainTab('stays')}>Explore Stays</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {myBookings.map((b: any) => {
+                  const isCancelled = b.paymentStatus === 'cancelled';
+                  const badgeColor = isCancelled ? '#ef4444' : '#22c55e';
+                  return (
+                    <div key={b.bookingId || b._id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '14px', padding: '1.35rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div style={{ flex: 1, minWidth: '240px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
+                          <span style={{ fontFamily: 'Cinzel, serif', fontWeight: 800, fontSize: '1.05rem', color: C.text }}>{b.hotelName}</span>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', padding: '2px 10px', borderRadius: '999px', background: `${badgeColor}20`, color: badgeColor, border: `1px solid ${badgeColor}44` }}>
+                            {b.paymentStatus || 'confirmed'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: C.muted, marginBottom: '4px' }}>
+                          📍 {b.hotelCity || 'Heritage Region'} · 🛏️ {b.roomType || 'Standard'} ({b.numRooms || 1} room, {b.numGuests || 2} guests)
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: C.text }}>
+                          📅 <strong>{b.checkIn}</strong> → <strong>{b.checkOut}</strong> · 👤 {b.guestName} ({b.guestEmail})
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: C.muted, marginTop: '4px' }}>
+                          🆔 <span style={{ fontFamily: 'monospace' }}>{b.bookingId}</span> · 💳 {b.paymentMethod || 'Pay at Hotel'}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.3rem', fontWeight: 800, color: C.gold }}>
+                          ₹{Number(b.totalAmount || 0).toLocaleString('en-IN')}
+                        </div>
+                        {!isCancelled && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelStay(b.bookingId)}
+                            style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#f87171', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            Cancel Reservation
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="stay-main-container">
 
           {/* Left Panel: Verified Stays List */}
@@ -1323,7 +1460,10 @@ export default function SmartStayPage() {
             <div className="stay-header-meta">
               <div>
                 <h1 className="stay-count-heading">{filtered.length} Stays Available</h1>
-                <p className="stay-count-sub">Curated verified heritage homestays, eco-camps & villas with real photos.</p>
+                <p className="stay-count-sub">
+                  Curated heritage stays + live hotel inventory
+                  {liveInventoryLoading ? ' (syncing live inventory...)' : liveInventorySource === 'openstreetmap-overpass' ? ' • Live OSM Synced' : ''}
+                </p>
               </div>
             </div>
 
@@ -1387,9 +1527,12 @@ export default function SmartStayPage() {
                           {prop.amenities.slice(0, 4).map(a => (
                             <span key={a} className="stay-amenity-tag">{a}</span>
                           ))}
-                          {prop.amenities.length > 4 && (
-                            <span className="stay-amenity-tag" style={{ color: C.gold, fontWeight: 700 }}>
-                              +{prop.amenities.length - 4} more
+                          <span className="stay-amenity-tag" style={{ color: '#22c55e', borderColor: 'rgba(34,197,94,0.3)' }}>
+                            ✓ {Math.max(1, ((prop as any).availableRooms || 6) - (bookedCounts[prop.id] || 0))} rooms available
+                          </span>
+                          {(prop as any).source === 'live-osm' && (
+                            <span className="stay-amenity-tag" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,0.35)' }}>
+                              📡 Live Inventory
                             </span>
                           )}
                         </div>
@@ -1502,8 +1645,10 @@ export default function SmartStayPage() {
             </MapContainer>
           </div>
         </div>
+        )}
 
         {/* Mobile View Floating Switcher */}
+        {mainTab === 'stays' && (
         <div className="mobile-view-tabs">
           <button 
             className={`mobile-tab-btn ${mobileView === 'list' ? 'active' : ''}`}
@@ -1518,6 +1663,7 @@ export default function SmartStayPage() {
             🗺️ Map View
           </button>
         </div>
+        )}
 
         {/* Comprehensive Full Details Modal with Multi-Photo Gallery */}
         {detailModal && (
@@ -1738,8 +1884,8 @@ export default function SmartStayPage() {
         {/* Reservation Modal */}
         {bookingModal && (
           <div className="booking-modal-backdrop" onClick={() => setBookingModal(null)}>
-            <div className="booking-modal-card" onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div className="booking-modal-card" style={{ maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.1rem' }}>
                 <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.35rem', color: C.text }}>
                   Reserve Your Stay
                 </h2>
@@ -1752,94 +1898,185 @@ export default function SmartStayPage() {
               </div>
 
               {bookingConfirmed ? (
-                <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
-                  <h3 style={{ fontFamily: 'Cinzel, serif', color: C.gold, margin: '0 0 0.5rem' }}>Booking Confirmed!</h3>
-                  <p style={{ color: C.muted, fontSize: '0.9rem' }}>
-                    Your stay at <strong>{bookingModal.name}</strong> is reserved. A confirmation SMS and ticket have been dispatched.
+                <div style={{ textAlign: 'center', padding: '1.25rem 0.5rem' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🎉</div>
+                  <h3 style={{ fontFamily: 'Cinzel, serif', color: C.gold, margin: '0 0 0.4rem' }}>Booking Confirmed!</h3>
+                  <p style={{ color: C.muted, fontSize: '0.88rem', marginBottom: '1rem' }}>
+                    Your stay at <strong>{bookingConfirmed.hotelName || bookingModal.name}</strong> has been saved to our database.
                   </p>
+                  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '1rem', textAlign: 'left', fontSize: '0.82rem', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: C.muted }}>Booking Reference</span>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, color: C.gold }}>{bookingConfirmed.bookingId}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: C.muted }}>Status</span>
+                      <span style={{ color: '#22c55e', fontWeight: 700, textTransform: 'uppercase' }}>{bookingConfirmed.paymentStatus || 'confirmed'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: C.muted }}>Guest</span>
+                      <span>{bookingConfirmed.guestName} ({bookingConfirmed.guestEmail})</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: C.muted }}>Dates</span>
+                      <span>{bookingConfirmed.checkIn} → {bookingConfirmed.checkOut}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: C.muted }}>Room &amp; Guests</span>
+                      <span>{bookingConfirmed.roomType} · {bookingConfirmed.numRooms} room(s), {bookingConfirmed.numGuests} guest(s)</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '6px', borderTop: `1px solid ${C.border}`, fontWeight: 800 }}>
+                      <span>Total Amount</span>
+                      <span style={{ color: C.gold }}>₹{Number(bookingConfirmed.totalAmount || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.6rem' }}>
+                    <button
+                      onClick={() => { setBookingModal(null); setMainTab('mybookings'); }}
+                      className="stay-primary-book-btn"
+                      style={{ flex: 1, padding: '10px' }}
+                    >
+                      📋 View My Bookings
+                    </button>
+                    <button
+                      onClick={() => setBookingModal(null)}
+                      style={{ flex: 1, padding: '10px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
-              ) : (
+              ) : (() => {
+                const nights = Math.max(1, getNights());
+                const subtotal = bookingModal.price * numRooms * nights;
+                const levy = Math.round(subtotal * 0.02);
+                const grandTotal = subtotal + levy;
+                const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: '0.84rem', outline: 'none' } as const;
+                const labelStyle = { display: 'block', fontSize: '0.7rem', fontWeight: 700, color: C.muted, marginBottom: '4px', textTransform: 'uppercase' } as const;
+                return (
                 <>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: C.card, padding: '1rem', borderRadius: '14px', border: `1px solid ${C.border}`, marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: C.card, padding: '0.9rem', borderRadius: '14px', border: `1px solid ${C.border}`, marginBottom: '1rem' }}>
                     <img 
                       src={bookingModal.image} 
                       alt={bookingModal.name}
-                      style={{ width: 80, height: 70, borderRadius: '10px', objectFit: 'cover' }}
+                      style={{ width: 72, height: 64, borderRadius: '10px', objectFit: 'cover' }}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG; }}
                     />
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '1rem', color: C.text }}>{bookingModal.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: C.muted }}>📍 {bookingModal.location}</div>
-                      <div style={{ fontSize: '0.8rem', color: C.gold, fontWeight: 700, marginTop: '2px' }}>
-                        ⭐ {bookingModal.rating} ({bookingModal.reviews} reviews)
+                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: C.text }}>{bookingModal.name}</div>
+                      <div style={{ fontSize: '0.78rem', color: C.muted }}>📍 {bookingModal.location}</div>
+                      <div style={{ fontSize: '0.78rem', color: C.gold, fontWeight: 700, marginTop: '2px' }}>
+                        ⭐ {bookingModal.rating} ({bookingModal.reviews} reviews) · ₹{bookingModal.price.toLocaleString()}/night
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  {/* Check-in / Check-out */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.7rem', marginBottom: '0.75rem' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: C.muted, marginBottom: '4px' }}>
-                        DURATION (NIGHTS)
-                      </label>
-                      <input 
-                        type="number" 
-                        min={1} 
-                        max={14}
-                        value={numRooms}
-                        onChange={e => setNumRooms(Math.max(1, parseInt(e.target.value) || 1))}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontWeight: 700 }}
-                      />
+                      <label style={labelStyle}>Check-In Date *</label>
+                      <input type="date" min={new Date().toISOString().split('T')[0]} value={checkIn} onChange={e => setCheckIn(e.target.value)} style={inputStyle} />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: C.muted, marginBottom: '4px' }}>
-                        GUESTS
-                      </label>
-                      <input 
-                        type="number" 
-                        min={1} 
-                        max={8}
-                        value={numGuests}
-                        onChange={e => setNumGuests(Math.max(1, parseInt(e.target.value) || 1))}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontWeight: 700 }}
-                      />
+                      <label style={labelStyle}>Check-Out Date *</label>
+                      <input type="date" min={checkIn || new Date().toISOString().split('T')[0]} value={checkOut} onChange={e => setCheckOut(e.target.value)} style={inputStyle} />
                     </div>
                   </div>
 
-                  <div style={{ background: C.card, padding: '1rem', borderRadius: '12px', border: `1px solid ${C.border}`, marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ color: C.muted }}>₹{bookingModal.price.toLocaleString()} × {numRooms} night(s)</span>
-                      <span>₹{(bookingModal.price * numRooms).toLocaleString()}</span>
+                  {/* Room Type, Rooms, Guests */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.7rem', marginBottom: '0.75rem' }}>
+                    <div>
+                      <label style={labelStyle}>Room Type</label>
+                      <select value={roomType} onChange={e => setRoomType(e.target.value)} style={inputStyle}>
+                        <option value="Heritage Standard Room">Heritage Standard</option>
+                        <option value="Deluxe Courtyard Suite">Deluxe Suite</option>
+                        <option value="Royal Pavilion">Royal Pavilion</option>
+                        <option value="Eco Garden Cottage">Eco Cottage</option>
+                      </select>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ color: C.muted }}>Cultural Preservation Levy (2%)</span>
-                      <span>₹{Math.round(bookingModal.price * numRooms * 0.02).toLocaleString()}</span>
+                    <div>
+                      <label style={labelStyle}>Rooms</label>
+                      <input type="number" min={1} max={10} value={numRooms} onChange={e => setNumRooms(Math.max(1, parseInt(e.target.value) || 1))} style={inputStyle} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: `1px solid ${C.border}`, fontWeight: 800, fontSize: '1rem' }}>
-                      <span>Total Amount</span>
-                      <span style={{ color: C.gold }}>
-                        ₹{Math.round(bookingModal.price * numRooms * 1.02).toLocaleString()}
-                      </span>
+                    <div>
+                      <label style={labelStyle}>Guests</label>
+                      <input type="number" min={1} max={12} value={numGuests} onChange={e => setNumGuests(Math.max(1, parseInt(e.target.value) || 1))} style={inputStyle} />
                     </div>
                   </div>
+
+                  {/* Guest Details */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.7rem', marginBottom: '0.75rem' }}>
+                    <div>
+                      <label style={labelStyle}>Guest Full Name *</label>
+                      <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Guest Email *</label>
+                      <input type="email" placeholder="guest@email.com" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} style={inputStyle} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.7rem', marginBottom: '0.75rem' }}>
+                    <div>
+                      <label style={labelStyle}>Phone Number</label>
+                      <input type="tel" placeholder="+91 98765 43210" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Payment Preference</label>
+                      <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} style={inputStyle}>
+                        <option value="Pay at Hotel">Pay at Property</option>
+                        <option value="UPI">UPI Instant Pay</option>
+                        <option value="Card">Credit / Debit Card</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '0.9rem' }}>
+                    <label style={labelStyle}>Special Requests</label>
+                    <input type="text" placeholder="Early check-in, vegetarian breakfast, airport pickup..." value={specialRequests} onChange={e => setSpecialRequests(e.target.value)} style={inputStyle} />
+                  </div>
+
+                  {/* Price Calculation */}
+                  <div style={{ background: C.card, padding: '0.9rem', borderRadius: '12px', border: `1px solid ${C.border}`, marginBottom: '1rem', fontSize: '0.84rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                      <span style={{ color: C.muted }}>₹{bookingModal.price.toLocaleString()} × {numRooms} room(s) × {nights} night(s)</span>
+                      <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                      <span style={{ color: C.muted }}>Cultural Preservation Levy (2%)</span>
+                      <span>₹{levy.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '7px', borderTop: `1px solid ${C.border}`, fontWeight: 800, fontSize: '0.98rem' }}>
+                      <span>Total Amount</span>
+                      <span style={{ color: C.gold }}>₹{grandTotal.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+
+                  {bookingError && (
+                    <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#f87171', fontSize: '0.8rem', marginBottom: '0.9rem', fontWeight: 600 }}>
+                      ⚠️ {bookingError}
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button 
                       onClick={() => setBookingModal(null)}
-                      style={{ flex: 1, padding: '12px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontWeight: 700, cursor: 'pointer' }}
+                      style={{ flex: 1, padding: '11px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontWeight: 700, cursor: 'pointer' }}
                     >
                       Cancel
                     </button>
                     <button 
                       onClick={handleConfirmReservation}
+                      disabled={bookingLoading}
                       className="stay-primary-book-btn"
-                      style={{ flex: 2, padding: '12px', fontSize: '0.95rem' }}
+                      style={{ flex: 2, padding: '11px', fontSize: '0.92rem', opacity: bookingLoading ? 0.65 : 1 }}
                     >
-                      Confirm Reservation
+                      {bookingLoading ? '⏳ Confirming...' : 'Confirm Reservation'}
                     </button>
                   </div>
                 </>
-              )}
+                );
+              })()}
             </div>
           </div>
         )}

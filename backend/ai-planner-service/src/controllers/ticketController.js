@@ -1,9 +1,15 @@
+const mongoose = require('mongoose');
 const Ticket = require('../models/Ticket');
+const Booking = require('../models/Booking');
+const localBookingStore = require('../utils/localBookingStore');
+const { toTicketPayload } = require('./bookingController');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 
-// In-memory fallback cache so ticketing works even if DB is momentarily disconnected
+const isMongoConnected = () => mongoose.connection.readyState === 1;
+
+// In-memory cache synced with persistent localBookingStore
 const inMemoryTickets = new Map();
 
 // Helper to send ticket confirmation email
@@ -216,10 +222,31 @@ exports.bookTicket = async (req, res) => {
     let savedTicket = ticketData;
 
     try {
-      const newTicket = new Ticket(ticketData);
-      savedTicket = await newTicket.save();
+      if (isMongoConnected()) {
+        const newTicket = new Ticket(ticketData);
+        savedTicket = await newTicket.save();
+      } else {
+        throw new Error('MongoDB offline');
+      }
     } catch (dbErr) {
-      console.warn('[Ticket Service] Mongo save skipped, using memory cache:', dbErr.message);
+      console.warn('[Ticket Service] Mongo save skipped, persisting to local booking store:', dbErr.message);
+      localBookingStore.saveBooking({
+        bookingId: ticketId,
+        ticketId,
+        userId: 'staff_demo',
+        monumentId: ticketData.activityId,
+        monumentName: ticketData.activityName,
+        site: ticketData.site,
+        visitorName: ticketData.visitorName,
+        email: ticketData.email,
+        phone: ticketData.phone,
+        visitDate: ticketData.visitDate,
+        timeSlot: ticketData.visitTime,
+        totalAmount: ticketData.totalINR,
+        paymentStatus: 'paid',
+        ticketStatus: 'active',
+        transactionRef: `DEMO_${ticketId}`,
+      });
     }
 
     inMemoryTickets.set(ticketId, savedTicket);
@@ -239,29 +266,40 @@ exports.bookTicket = async (req, res) => {
   }
 };
 
-// Verify/Get ticket details
+// Verify/Get ticket details — validates against persistent Booking + Ticket database
 exports.verifyTicket = async (req, res) => {
   try {
     const { id } = req.params;
     let ticket = null;
 
-    try {
-      ticket = await Ticket.findOne({ ticketId: id });
-    } catch (err) {
-      // Fallback to in-memory
+    if (isMongoConnected()) {
+      try {
+        ticket = await Ticket.findOne({ ticketId: id });
+        if (!ticket) {
+          const booking = await Booking.findOne({ $or: [{ bookingId: id }, { ticketId: id }] });
+          if (booking) ticket = toTicketPayload(booking);
+        }
+      } catch (err) {
+        // Fallback to local persistent store
+      }
+    }
+
+    if (!ticket) {
+      const localBooking = localBookingStore.getBookingById(id);
+      if (localBooking) ticket = toTicketPayload(localBooking);
     }
 
     if (!ticket) {
       ticket = inMemoryTickets.get(id);
     }
-    
+
     if (!ticket) {
-      return res.status(404).json({ success: false, message: 'Ticket not found.' });
+      return res.status(404).json({ success: false, message: 'Ticket not found in database.' });
     }
 
     res.status(200).json({
       success: true,
-      ticket
+      ticket,
     });
   } catch (error) {
     console.error('[Ticket Service] Error verifying ticket:', error);
@@ -269,51 +307,102 @@ exports.verifyTicket = async (req, res) => {
   }
 };
 
-// Mark ticket as scanned (for Staff Scanner)
+// Mark ticket as scanned (for Staff Scanner) — checks persistent Booking + Ticket DB
 exports.scanTicket = async (req, res) => {
   try {
-    const { ticketId, staffId } = req.body;
-    let ticket = null;
-
-    try {
-      ticket = await Ticket.findOne({ ticketId });
-    } catch (err) {
-      // Fallback
+    const { ticketId, bookingId, staffId } = req.body;
+    const lookupId = ticketId || bookingId;
+    if (!lookupId) {
+      return res.status(400).json({ success: false, message: 'Ticket ID is required.' });
     }
 
-    if (!ticket) {
-      ticket = inMemoryTickets.get(ticketId);
+    let source = null;
+    let record = null;
+
+    if (isMongoConnected()) {
+      try {
+        record = await Ticket.findOne({ ticketId: lookupId });
+        if (record) {
+          source = 'mongo_ticket';
+        } else {
+          record = await Booking.findOne({ $or: [{ bookingId: lookupId }, { ticketId: lookupId }] });
+          if (record) source = 'mongo_booking';
+        }
+      } catch (err) {
+        // Fallback
+      }
     }
 
-    if (!ticket) {
-      return res.status(404).json({ success: false, message: 'Ticket not found.' });
+    if (!record) {
+      record = localBookingStore.getBookingById(lookupId);
+      if (record) source = 'local_booking';
     }
 
-    if (ticket.status === 'scanned') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'This ticket has ALREADY BEEN SCANNED.',
-        scannedAt: ticket.scannedAt
+    if (!record) {
+      record = inMemoryTickets.get(lookupId);
+      if (record) source = 'memory_ticket';
+    }
+
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Ticket not found in database.' });
+    }
+
+    // Check payment status for Booking records
+    if ((source === 'mongo_booking' || source === 'local_booking') && record.paymentStatus && record.paymentStatus !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot admit visitor: payment status is '${record.paymentStatus}'. Only paid tickets are valid.`,
       });
     }
 
-    if (ticket.status === 'cancelled') {
+    const currentStatus = source === 'mongo_booking' || source === 'local_booking'
+      ? record.ticketStatus
+      : record.status;
+
+    if (currentStatus === 'scanned') {
+      return res.status(400).json({
+        success: false,
+        message: 'This ticket has ALREADY BEEN SCANNED.',
+        scannedAt: record.scannedAt,
+      });
+    }
+
+    if (currentStatus === 'cancelled') {
       return res.status(400).json({ success: false, message: 'This ticket is cancelled.' });
     }
 
-    ticket.status = 'scanned';
-    ticket.scannedAt = new Date();
-    ticket.scannedBy = staffId || 'unknown_staff';
+    const scannedAt = new Date();
+    const scanner = staffId || 'EMP-001';
 
-    if (typeof ticket.save === 'function') {
-      await ticket.save();
+    if (source === 'mongo_ticket') {
+      record.status = 'scanned';
+      record.scannedAt = scannedAt;
+      record.scannedBy = scanner;
+      await record.save();
+    } else if (source === 'mongo_booking') {
+      record.ticketStatus = 'scanned';
+      record.scannedAt = scannedAt;
+      record.scannedBy = scanner;
+      await record.save();
+    } else if (source === 'local_booking') {
+      record = localBookingStore.updateBookingStatus(record.bookingId || lookupId, {
+        ticketStatus: 'scanned',
+        scannedAt: scannedAt.toISOString(),
+        scannedBy: scanner,
+      });
+    } else {
+      record.status = 'scanned';
+      record.scannedAt = scannedAt;
+      record.scannedBy = scanner;
+      inMemoryTickets.set(lookupId, record);
     }
-    inMemoryTickets.set(ticketId, ticket);
+
+    const payload = source === 'mongo_booking' || source === 'local_booking' ? toTicketPayload(record) : record;
 
     res.status(200).json({
       success: true,
-      message: 'Ticket scanned successfully. Visitor may enter.',
-      ticket
+      message: 'Ticket verified against database & scanned successfully. Visitor may enter.',
+      ticket: payload,
     });
   } catch (error) {
     console.error('[Ticket Service] Error scanning ticket:', error);

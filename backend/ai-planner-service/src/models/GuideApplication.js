@@ -1,48 +1,47 @@
 const mongoose = require('mongoose');
 
 const GuideApplicationSchema = new mongoose.Schema({
-  // Personal
+  // Personal Information
   fullName: { type: String, required: true },
-  email: { type: String, required: true },
+  profilePhotoUrl: { type: String },
+  email: { type: String, required: true, index: true },
   phone: { type: String },
   location: { type: String },
-  profilePhotoUrl: { type: String },
 
-  // Professional
+  // Professional Information
   guideType: {
     type: String,
-    enum: ['individual', 'institution', 'freelance'],
-    default: 'individual',
+    default: 'Individual Guide',
   },
-  yearsExperience: { type: Number },
+  yearsExperience: { type: Number, default: 0 },
   previousExperience: { type: String },
   specializations: { type: [String], default: [] },
   description: { type: String },
 
-  // Heritage
-  heritageSites: { type: [String], default: [] },
+  // Heritage Expertise
+  heritageSites: { type: [String], default: [], index: true },
   knowledgeAreas: { type: [String], default: [] },
   historicalSubjects: { type: [String], default: [] },
   tourTypes: { type: [String], default: [] },
 
   // Languages & Services
-  languages: { type: [String], default: [] },
+  languages: { type: [String], default: [], index: true },
   services: { type: [String], default: [] },
   accessibilityServices: { type: [String], default: [] },
-  maxGroupSize: { type: Number },
+  maxGroupSize: { type: Number, default: 10 },
 
   // Availability
   availableDays: { type: [String], default: [] },
   timeSlots: { type: [String], default: [] },
-  tourDuration: { type: String },
+  tourDuration: { type: [String], default: [] },
 
   // Pricing
-  hourlyRate: { type: Number },
-  tourRate: { type: Number },
-  groupRate: { type: Number },
+  hourlyRate: { type: Number, default: 0 },
+  tourRate: { type: Number, default: 0 },
+  groupRate: { type: Number, default: 0 },
   additionalCharges: { type: String },
 
-  // Qualifications
+  // Qualifications & Verification
   certifications: { type: [String], default: [] },
   documents: { type: [String], default: [] },
   verificationStatus: {
@@ -55,6 +54,7 @@ const GuideApplicationSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'under_review', 'approved', 'rejected'],
     default: 'pending',
+    index: true,
   },
 
   submittedAt: { type: Date, default: Date.now },

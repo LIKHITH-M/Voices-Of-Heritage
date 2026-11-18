@@ -1,5 +1,6 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -167,10 +168,28 @@ export default function DashboardPage() {
   const [supportOpen,   setSupportOpen]   = useState(false);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [expStats, setExpStats] = useState({ sitesVisited: 0, experiencesRecorded: 0, tripsCompleted: 0, preferencesCount: 0 });
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth/login');
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const uid = user?.id || localStorage.getItem('voh_user_id');
+    if (!uid) return;
+    axios.get(`/api/experiences/summary?userId=${encodeURIComponent(uid)}`, { headers: { 'x-user-id': uid } })
+      .then(({ data }) => {
+        if (data?.success && data?.stats) {
+          setExpStats({
+            sitesVisited: data.stats.placesVisited || 0,
+            experiencesRecorded: data.stats.experiencesRecorded || 0,
+            tripsCompleted: data.stats.tripsCompleted || 0,
+            preferencesCount: (data.prefers?.length || 0) + (data.avoids?.length || 0),
+          });
+        }
+      })
+      .catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -547,6 +566,7 @@ export default function DashboardPage() {
                 if (item.id === 'explore') { navigate('/explore'); return; }
                 if (item.id === 'ai-planner') { navigate('/trip-planner'); return; }
                 if (item.id === 'archives') { navigate('/archives'); return; }
+                if (item.id === 'experiences') { navigate('/experiences'); return; }
                 if (item.id === 'bookings') { navigate('/bookings'); return; }
                 setActiveNav(item.id);
                 setSidebarOpen(false);
@@ -645,12 +665,12 @@ export default function DashboardPage() {
 
           <section className="voh-stats">
             {[
-              { emoji: '📍', value: '0', label: 'Sites Visited', color: C.gold },
-              { emoji: '🔖', value: '0', label: 'Saved Places',  color: C.gold  },
-              { emoji: '🎭', value: '0', label: 'Experiences',   color: C.gold   },
-              { emoji: '📝', value: '0', label: 'Reviews Left',  color: C.gold  },
+              { emoji: '📍', value: String(expStats.sitesVisited), label: 'Sites Visited', color: C.gold, href: '/experiences' },
+              { emoji: '🧳', value: String(expStats.tripsCompleted), label: 'Trips Completed', color: C.gold, href: '/experiences' },
+              { emoji: '🎭', value: String(expStats.experiencesRecorded), label: 'Experiences', color: C.gold, href: '/experiences' },
+              { emoji: '🧠', value: String(expStats.preferencesCount), label: 'DEPKG Signals', color: C.gold, href: '/experiences' },
             ].map(s => (
-              <div key={s.label} className="voh-stat-card">
+              <div key={s.label} className="voh-stat-card" style={{ cursor: 'pointer' }} onClick={() => navigate(s.href)}>
                 <div className="voh-stat-icon" style={{ color: s.color }}>{s.emoji}</div>
                 <div>
                   <div style={{ fontSize:'1.4rem', fontWeight:700, color:C.text }}>{s.value}</div>

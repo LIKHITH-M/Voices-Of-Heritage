@@ -40,21 +40,24 @@ const writeBookings = (bookings) => {
 module.exports = {
   saveBooking: (bookingData) => {
     const bookings = readBookings();
-    const bookingId = bookingData.bookingId || `BKG_${uuidv4()}`;
+    const bookingId = bookingData.bookingId || bookingData.ticketId || `BKG_${Date.now()}_${uuidv4().slice(0, 8).toUpperCase()}`;
+    const now = new Date().toISOString();
     const newBooking = {
       _id: bookingId,
       ...bookingData,
       bookingId,
-      createdAt: bookingData.createdAt || new Date().toISOString(),
+      ticketId: bookingData.ticketId || bookingId,
+      createdAt: bookingData.createdAt || now,
+      updatedAt: now,
     };
     bookings.unshift(newBooking);
     writeBookings(bookings);
     return newBooking;
   },
 
-  getBookingById: (bookingId) => {
+  getBookingById: (id) => {
     const bookings = readBookings();
-    return bookings.find((b) => b.bookingId === bookingId || b._id === bookingId) || null;
+    return bookings.find((b) => b.bookingId === id || b.ticketId === id || b._id === id) || null;
   },
 
   getBookingsByUserId: (userId) => {
@@ -62,19 +65,45 @@ module.exports = {
     return bookings.filter((b) => b.userId === userId);
   },
 
-  updateBookingStatus: (bookingId, updateData) => {
+  getAllBookings: () => {
+    return readBookings();
+  },
+
+  updateBookingStatus: (id, updateData) => {
     const bookings = readBookings();
-    const index = bookings.findIndex((b) => b.bookingId === bookingId || b._id === bookingId);
+    const index = bookings.findIndex((b) => b.bookingId === id || b.ticketId === id || b._id === id);
     if (index === -1) return null;
-    bookings[index] = { ...bookings[index], ...updateData, updatedAt: new Date().toISOString() };
+    bookings[index] = {
+      ...bookings[index],
+      ...updateData,
+      updatedAt: new Date().toISOString(),
+    };
     writeBookings(bookings);
     return bookings[index];
   },
 
-  verifyTicket: (bookingId) => {
+  verifyTicket: (id) => {
     const bookings = readBookings();
-    const booking = bookings.find((b) => b.bookingId === bookingId || b._id === bookingId);
-    if (!booking) return { valid: false, booking: null };
-    return { valid: booking.paymentStatus === 'paid', booking };
+    const booking = bookings.find((b) => b.bookingId === id || b.ticketId === id || b._id === id);
+    if (!booking) return { valid: false, reason: 'Ticket not found in database', booking: null };
+    if (booking.paymentStatus !== 'paid') {
+      return {
+        valid: false,
+        reason: `Payment status is '${booking.paymentStatus}'. Only paid tickets are valid for entry.`,
+        booking,
+      };
+    }
+    if (booking.ticketStatus === 'cancelled') {
+      return { valid: false, reason: 'This ticket has been cancelled.', booking };
+    }
+    if (booking.ticketStatus === 'scanned') {
+      return {
+        valid: false,
+        alreadyScanned: true,
+        reason: `Ticket already scanned on ${booking.scannedAt || 'earlier'}.`,
+        booking,
+      };
+    }
+    return { valid: true, reason: 'Valid paid ticket', booking };
   },
 };

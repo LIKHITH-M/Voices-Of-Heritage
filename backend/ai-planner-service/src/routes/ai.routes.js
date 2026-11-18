@@ -116,10 +116,26 @@ const {
 } = require('../services/itineraryEngine');
 
 function generateKGItinerary(destination, duration, contextPack, options = {}) {
-  const ptkgContext = options.ptkgContext || {
-    likedPreferences: contextPack?.travelerPreferences?.liked || [],
-    avoidedPreferences: contextPack?.travelerPreferences?.avoided || [],
-    metadata: contextPack?.metadata || {},
+  const baseLiked = contextPack?.travelerPreferences?.liked || [];
+  const baseAvoided = contextPack?.travelerPreferences?.avoided || [];
+  const mergedLiked = [...baseLiked, ...(options.ptkgContext?.likedPreferences || [])];
+  const mergedAvoided = [...baseAvoided, ...(options.ptkgContext?.avoidedPreferences || [])];
+
+  const ptkgContext = {
+    ...(options.ptkgContext || {}),
+    likedPreferences: mergedLiked,
+    avoidedPreferences: mergedAvoided,
+    episodicEvidence: contextPack?.travelerPreferences?.episodicEvidence || [],
+    inferences: contextPack?.travelerPreferences?.inferences || [],
+    compressedContext:
+      options.ptkgContext?.compressedContext ||
+      contextPack?.travelerPreferences?.compressedExperienceContext ||
+      '',
+    metadata: {
+      ...(options.ptkgContext?.metadata || {}),
+      ...(contextPack?.metadata || {}),
+      isColdStart: !(mergedLiked.length > 0 || mergedAvoided.length > 0),
+    },
   };
 
   return generateCoherentItinerary({

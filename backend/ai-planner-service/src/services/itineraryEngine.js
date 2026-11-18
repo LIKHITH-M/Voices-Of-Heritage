@@ -73,11 +73,29 @@ function generateCoherentItinerary({
   // 3. Proportional Day Allocation across Hubs
   const dayAllocations = allocateDaysToHubs(orderedHubs, numDays);
 
-  // 4. Personalization & Preference Matching
+  // 4. Personalization & Preference Matching (DEPKG Experiences + PTKG)
   const likedPrefs = ptkgContext.likedPreferences || [];
   const avoidedPrefs = (ptkgContext.avoidedPreferences || []).map((p) =>
     String(p.value || p).toLowerCase()
   );
+
+  // Detect temporal & crowd preferences learned from past Experiences
+  const prefersMorning = likedPrefs.some((p) =>
+    /morning|sunrise|early/i.test(String(p.value || ''))
+  ) || avoidedPrefs.some((v) => /afternoon|crowd/i.test(v));
+  const morningPrefObj = likedPrefs.find((p) => /morning|sunrise|early/i.test(String(p.value || '')))
+    || (ptkgContext.avoidedPreferences || []).find((p) => /afternoon|crowd/i.test(String(p.value || '')));
+
+  const prefersLowCrowd = likedPrefs.some((p) => /low[- ]crowd|peaceful|quiet|less crowded/i.test(String(p.value || '')))
+    || avoidedPrefs.some((v) => /crowd/i.test(v));
+  const prefersShortWalk = likedPrefs.some((p) => /shorter walk/i.test(String(p.value || '')))
+    || avoidedPrefs.some((v) => /long walk/i.test(v));
+  const rainSensitive = likedPrefs.some((p) => /indoor|rain/i.test(String(p.value || '')))
+    || avoidedPrefs.some((v) => /rain/i.test(v));
+
+  const likedDishes = likedPrefs
+    .filter((p) => p.dimension === 'dish' || p.dimension === 'cuisine')
+    .map((p) => p.value);
 
   // 5. Track used places to guarantee ZERO duplication across all days
   const usedSubSiteIds = new Set();
@@ -98,46 +116,65 @@ function generateCoherentItinerary({
       }
       // Check negative preferences
       const siteText = `${s.name} ${s.heritage_note} ${(s.category || '')}`.toLowerCase();
-      if (avoidedPrefs.some((avoid) => siteText.includes(avoid))) {
+      if (avoidedPrefs.some((avoid) => avoid.length >= 4 && !/crowd|afternoon|rain|walk|heat/.test(avoid) && siteText.includes(avoid))) {
         return false;
       }
       return true;
     });
 
-    // Sort available sub-sites by preference affinity (PTKG)
+    // Sort available sub-sites by preference affinity (DEPKG + PTKG)
     availableSubSites.sort((a, b) => {
       let scoreA = 0;
       let scoreB = 0;
+      const textA = `${a.name} ${a.heritage_note || ''} ${a.preferenceMatchTag || ''} ${a.category || ''} ${a.desc || ''}`.toLowerCase();
+      const textB = `${b.name} ${b.heritage_note || ''} ${b.preferenceMatchTag || ''} ${b.category || ''} ${b.desc || ''}`.toLowerCase();
       likedPrefs.forEach((p) => {
-        const val = String(p.value).toLowerCase();
-        if ((a.heritage_note || '').toLowerCase().includes(val) || (a.preferenceMatchTag || '').toLowerCase().includes(val)) scoreA += 3;
-        if ((b.heritage_note || '').toLowerCase().includes(val) || (b.preferenceMatchTag || '').toLowerCase().includes(val)) scoreB += 3;
+        const val = String(p.value || '').toLowerCase();
+        const tokens = val.split(/\s+/).filter((t) => t.length >= 4);
+        const weight = Number(p.confidence || 0.6) * 4;
+        if (textA.includes(val) || tokens.some((tok) => textA.includes(tok))) scoreA += weight;
+        if (textB.includes(val) || tokens.some((tok) => textB.includes(tok))) scoreB += weight;
       });
       return scoreB - scoreA;
     });
 
-    // Select up to three verified daytime attractions. An empty day is preferable
-    // to inventing a place when the local catalog has no further candidates.
+    // Select up to three verified daytime attractions (respecting shorter walking preference if set)
     const dayActivities = [];
-    const times = ['09:00', '11:30', '14:30'];
+    const times = prefersMorning ? ['07:30', '10:00', '15:30'] : ['09:00', '11:30', '14:30'];
+    const maxSlots = prefersShortWalk ? 2 : 3;
 
-    for (let slot = 0; slot < Math.min(3, availableSubSites.length); slot++) {
+    for (let slot = 0; slot < Math.min(maxSlots, availableSubSites.length); slot++) {
       let chosenSite = availableSubSites.shift();
 
       usedSubSiteIds.add(chosenSite.siteId);
       usedLocationNames.add(chosenSite.name.toLowerCase());
 
-      // Check preference match for explainability
+      // Check preference match for rich explainability
+      const siteHaystack = `${chosenSite.name} ${chosenSite.heritage_note || ''} ${chosenSite.preferenceMatchTag || ''} ${chosenSite.category || ''} ${chosenSite.desc || ''}`.toLowerCase();
       const matchedPref = likedPrefs.find((p) => {
-        const val = String(p.value).toLowerCase();
-        return (
-          (chosenSite.heritage_note || '').toLowerCase().includes(val) ||
-          (chosenSite.preferenceMatchTag || '').toLowerCase().includes(val)
-        );
+        const val = String(p.value || '').toLowerCase();
+        const tokens = val.split(/\s+/).filter((t) => t.length >= 4);
+        return siteHaystack.includes(val) || tokens.some((tok) => siteHaystack.includes(tok));
       });
 
-      const prefExplain = matchedPref
-        ? `Personalized via PTKG: Matches your affinity for ${matchedPref.value} (${chosenSite.preferenceMatchTag || 'heritage style'})`
+      const explainParts = [];
+      if (matchedPref) {
+        const srcCite = matchedPref.explainability ? ` (${matchedPref.explainability})` : '';
+        explainParts.push(`Matches your preference for ${matchedPref.value}${srcCite}`);
+      }
+      if (slot === 0 && prefersMorning) {
+        const cite = morningPrefObj?.explainability ? ` — ${morningPrefObj.explainability}` : '';
+        explainParts.push(`Scheduled early at ${times[0]} to avoid afternoon crowds${cite}`);
+      }
+      if (prefersLowCrowd && slot === 0 && !explainParts.some((e) => /crowd/i.test(e))) {
+        explainParts.push('Early quiet-hour slot chosen for low-crowd preference');
+      }
+      if (rainSensitive) {
+        explainParts.push('Covered pavilion/indoor fallback advised if rain occurs');
+      }
+
+      const prefExplain = explainParts.length
+        ? `Personalized via DEPKG: ${explainParts.join('; ')}`
         : `Curated for ${hub.name} heritage circuit (${chosenSite.preferenceMatchTag || 'architectural landmark'})`;
 
       dayActivities.push({
@@ -208,7 +245,7 @@ function generateCoherentItinerary({
   const allHighlights = orderedHubs.flatMap((h) =>
     (h.subSites || []).slice(0, 2).map((s) => `${s.name} (${h.name})`)
   );
-  const allCuisines = Array.from(new Set(orderedHubs.flatMap((h) => h.cuisines || [])));
+  const allCuisines = Array.from(new Set([...likedDishes, ...orderedHubs.flatMap((h) => h.cuisines || [])]));
 
   return {
     destination,
@@ -221,11 +258,17 @@ function generateCoherentItinerary({
     heritageTheme: `${orderedHubs.map((h) => h.name).join(' → ')} Heritage Corridor & Living Traditions`,
     personalizationSummary:
       ptkgContext.metadata?.isColdStart === false
-        ? `Personalized via DEPKG: Tailored route through ${orderedHubs.map((h) => h.name).join(', ')} matching your preferences for ${likedPrefs.map((p) => p.value).join(', ')}.`
+        ? `Personalized via DEPKG: Tailored route through ${orderedHubs.map((h) => h.name).join(', ')} honoring your preferences (${likedPrefs.slice(0, 5).map((p) => p.value).join(', ')})${avoidedPrefs.length ? ` while avoiding ${avoidedPrefs.slice(0, 3).join(', ')}` : ''}.`
       : `Curated from verified project locations across ${orderedHubs.map((h) => h.name).join(' → ')} with no repeated attractions.`,
+    depkgExplainability: likedPrefs.slice(0, 5).map((p) => ({
+      preference: p.value,
+      dimension: p.dimension,
+      confidence: p.confidence,
+      reason: p.explainability || 'Derived from your recorded travel experiences',
+    })),
     itinerary: days,
     heritageHighlights: allHighlights.slice(0, 5),
-    localCuisineRecommendations: allCuisines.slice(0, 4),
+    localCuisineRecommendations: allCuisines.slice(0, 5),
   };
 }
 

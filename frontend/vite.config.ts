@@ -57,6 +57,14 @@ export default defineConfig({
         target: 'http://localhost:5002',
         changeOrigin: true,
       },
+      '/api/utilities': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/api/experiences': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
     },
   },
 });

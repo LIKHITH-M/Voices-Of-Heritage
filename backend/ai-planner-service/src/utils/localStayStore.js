@@ -57,6 +57,10 @@ module.exports = {
     return stays.filter((s) => s.userId === userId);
   },
 
+  getAllStayBookings: () => {
+    return readStays();
+  },
+
   updateStayBooking: (bookingId, updateData) => {
     const stays = readStays();
     const index = stays.findIndex((s) => s.bookingId === bookingId || s._id === bookingId);

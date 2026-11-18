@@ -25,8 +25,13 @@ function buildPTKGEnhancedPrompt(reqBody, baseContextPack, ptkgContext = {}, rag
     (h.subSites || []).map(s => `• [${h.name}] ${s.name} (${s.category}) | ~${s.duration}h | ₹${s.entryFeeINR} | ${s.heritage_note}`)
   ).slice(0, 20);
 
-  // 3. PTKG Section
-  const compressedPTKG = ptkgContext.compressedContext || '';
+  // 3. PTKG + Live DEPKG Experiences Section
+  const compressedPTKG = [
+    ptkgContext.compressedContext || '',
+    baseContextPack?.travelerPreferences?.compressedExperienceContext || '',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
   // 4. RAG Heritage Knowledge Section
   let ragSection = '';

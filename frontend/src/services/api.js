@@ -79,17 +79,19 @@ export const userAPI = {
 // AI API calls
 export const aiAPI = {
   generateItinerary: async (itineraryData) => {
+    const uid = typeof window !== "undefined" ? localStorage.getItem("voh_user_id") : null;
+    const payload = { ...itineraryData, userId: itineraryData?.userId || uid || "anonymous" };
     try {
-      return await api.post("/ai/generate-itinerary", itineraryData);
+      return await api.post("/ai/generate-itinerary", payload);
     } catch (err) {
       console.warn("[aiAPI] /ai/generate-itinerary failed, trying /ai/generate-heritage-itinerary...", err.message);
       try {
-        return await api.post("/ai/generate-heritage-itinerary", itineraryData);
+        return await api.post("/ai/generate-heritage-itinerary", payload);
       } catch (err2) {
         console.warn("[aiAPI] Relative fallback failed, trying direct port 5002...", err2.message);
         return await axios.post(
           "http://localhost:5002/api/ai/generate-heritage-itinerary",
-          itineraryData,
+          payload,
           {
             headers: { "Content-Type": "application/json" },
             timeout: 60000,
@@ -182,9 +184,11 @@ export const tripAPI = {
   },
 
   createTrip: async (tripData) => {
+    const uid = typeof window !== "undefined" ? localStorage.getItem("voh_user_id") : null;
     // Normalization
     const normalized = {
       ...tripData,
+      userId: tripData.userId || uid || "guest",
       status: tripData.status || "upcoming",
       destination:
         typeof tripData.destination === "string"

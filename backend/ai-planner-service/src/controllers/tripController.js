@@ -18,6 +18,7 @@ const createTrip = async (req, res) => {
     }
 
     const {
+      userId,
       title,
       description,
       destination,
@@ -35,6 +36,7 @@ const createTrip = async (req, res) => {
     let tripStatus = status || "upcoming";
 
     const tripData = {
+      userId: userId || req.headers["x-user-id"] || "guest",
       title: title || `Trip to ${destination?.city || 'Destination'}`,
       description: description || `Trip to ${destination?.city || 'Destination'}`,
       destination: destination || { city: 'Destination', country: 'India', coordinates: { lat: 0, lng: 0 } },
@@ -236,10 +238,41 @@ const updateTrip = async (req, res) => {
 
     const localUpdated = localTripStore.updateTrip(id, updateData);
 
+    // Auto-generate idempotent trip experience record when trip is marked completed
+    const triggerTripExperience = (tripObj) => {
+      if (tripObj && updateData.status === "completed") {
+        try {
+          const { recordAutoExperience } = require("./experienceController");
+          const uid = tripObj.userId || req.headers["x-user-id"] || req.body?.userId || "guest";
+          const tid = String(tripObj._id || tripObj.id || id);
+          const dest = typeof tripObj.destination === "string"
+            ? tripObj.destination
+            : tripObj.destination?.city || tripObj.title || "Heritage Trip";
+          recordAutoExperience({
+            userId: uid,
+            eventKey: `trip:${tid}`,
+            tripId: tid,
+            experienceType: "trip",
+            title: tripObj.title || `${dest} Heritage Trip`,
+            destination: dest,
+            placeName: dest,
+            visitStatus: "visited",
+            plannedData: {
+              destination: dest,
+              plannedDate: tripObj.startDate,
+              plannedDurationHours: (tripObj.preferences?.duration || 1) * 8,
+            },
+            visitedAt: tripObj.endDate || new Date().toISOString(),
+          }).catch(() => {});
+        } catch {}
+      }
+    };
+
     if (mongoose.connection.readyState === 1) {
       try {
         const trip = await Trip.findByIdAndUpdate(id, updateData, { new: true }).lean();
         if (trip) {
+          triggerTripExperience(trip);
           return res.json({
             success: true,
             message: "Trip updated successfully",
@@ -252,6 +285,7 @@ const updateTrip = async (req, res) => {
     }
 
     if (localUpdated) {
+      triggerTripExperience(localUpdated);
       return res.json({
         success: true,
         message: "Trip updated successfully",

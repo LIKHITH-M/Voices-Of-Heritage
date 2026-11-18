@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const {
+  getLiveInventory,
   bookStay,
   getStayBooking,
   getUserStayBookings,
   cancelStayBooking,
 } = require('../controllers/stayController');
+
+// GET /api/stays/inventory — live OSM hotel inventory + real-time availability
+router.get('/inventory', getLiveInventory);
 
 // POST /api/stays/book
 router.post('/book', bookStay);

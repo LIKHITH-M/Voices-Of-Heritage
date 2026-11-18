@@ -6,7 +6,11 @@ const {
   getUserApplication,
   updateStatus,
   listApplications,
+  matchGuides,
 } = require('../controllers/guideController');
+
+// GET /api/guides/match — Tourist-to-Guide Matching query
+router.get('/match', matchGuides);
 
 // GET /api/guides/applications — list all (with optional ?status= filter)
 router.get('/applications', listApplications);

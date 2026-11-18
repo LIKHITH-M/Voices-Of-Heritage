@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const tripSchema = new mongoose.Schema(
   {
+    userId: {
+      type: String,
+      index: true,
+      default: "guest",
+    },
     title: {
       type: String,
       required: [true, "Trip title is required"],
