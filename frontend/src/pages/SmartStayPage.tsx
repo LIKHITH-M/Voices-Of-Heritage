@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import axios from 'axios';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import VoHLogo from '@/components/VoHLogo';
@@ -400,9 +401,27 @@ export default function SmartStayPage() {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [bookingModal, setBookingModal] = useState<StayProperty | null>(null);
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
-  const [bookingDays, setBookingDays] = useState(1);
-  const [bookingGuests, setBookingGuests] = useState(2);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [mainTab, setMainTab] = useState<'stays' | 'mybookings'>('stays');
+
+  // Booking form state
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [roomType, setRoomType] = useState('Standard');
+  const [numRooms, setNumRooms] = useState(1);
+  const [numGuests, setNumGuests] = useState(2);
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [specialRequests, setSpecialRequests] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Pay at Hotel');
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [bookingConfirmed, setBookingConfirmed] = useState<any>(null);
+
+  // My Bookings state
+  const [myBookings, setMyBookings] = useState<any[]>([]);
+  const [myBookingsLoading, setMyBookingsLoading] = useState(false);
+  const [myBookingsError, setMyBookingsError] = useState('');
 
   // Filter only items that have valid pictures
   const filtered = verifiedProperties.filter(p => {
@@ -424,16 +443,75 @@ export default function SmartStayPage() {
 
   const handleBook = (p: StayProperty) => {
     setBookingModal(p);
-    setBookingSuccess(false);
+    setBookingConfirmed(null);
+    setBookingError('');
+    setCheckIn('');
+    setCheckOut('');
+    setRoomType('Standard');
+    setNumRooms(1);
+    setNumGuests(2);
+    setGuestName('');
+    setGuestEmail('');
+    setGuestPhone('');
+    setSpecialRequests('');
+    setPaymentMethod('Pay at Hotel');
   };
 
-  const handleConfirmReservation = () => {
-    setBookingSuccess(true);
-    setTimeout(() => {
-      setBookingModal(null);
-      setBookingSuccess(false);
-    }, 2000);
+  const getNights = () => {
+    if (!checkIn || !checkOut) return 0;
+    const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
   };
+
+  const handleConfirmReservation = async () => {
+    if (!bookingModal) return;
+    if (!checkIn || !checkOut) { setBookingError('Please select check-in and check-out dates.'); return; }
+    if (!guestName.trim()) { setBookingError('Please enter guest name.'); return; }
+    if (!guestEmail.trim()) { setBookingError('Please enter guest email.'); return; }
+    const nights = getNights();
+    if (nights <= 0) { setBookingError('Check-out must be after check-in.'); return; }
+    const totalAmount = bookingModal.price * numRooms * nights;
+    setBookingLoading(true);
+    setBookingError('');
+    try {
+      const response = await axios.post('/api/stays/book', {
+        userId: localStorage.getItem('voh_user_id') || 'guest',
+        hotelId: bookingModal.id,
+        hotelName: bookingModal.name,
+        hotelCity: bookingModal.location,
+        checkIn, checkOut, roomType, numRooms, numGuests,
+        totalAmount,
+        guestName, guestEmail, guestPhone,
+        specialRequests,
+        paymentMethod,
+      });
+      setBookingConfirmed(response.data.booking || response.data);
+    } catch (err: any) {
+      setBookingError(err?.response?.data?.message || 'Booking failed. Please try again.');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const fetchMyBookings = async () => {
+    setMyBookingsLoading(true);
+    setMyBookingsError('');
+    try {
+      const userId = localStorage.getItem('voh_user_id') || 'guest';
+      const res = await axios.get(`/api/stays/user/${userId}`);
+      setMyBookings(res.data.bookings || res.data || []);
+    } catch (err: any) {
+      setMyBookingsError('Could not fetch bookings. Please try again.');
+    } finally {
+      setMyBookingsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (mainTab === 'mybookings') {
+      fetchMyBookings();
+    }
+  }, [mainTab]);
 
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -1173,6 +1251,26 @@ export default function SmartStayPage() {
         <div className="stay-controls-bar">
           <div className="stay-controls-left">
             <div className="stay-category-scroll">
+              {/* Main page tabs */}
+              <button
+                type="button"
+                className={`category-pill ${mainTab === 'stays' ? 'active' : ''}`}
+                onClick={() => setMainTab('stays')}
+              >
+                <span className="pill-icon">🏨</span>
+                <span className="pill-text-desktop">Browse Stays</span>
+                <span className="pill-text-mobile">Stays</span>
+              </button>
+              <button
+                type="button"
+                className={`category-pill ${mainTab === 'mybookings' ? 'active' : ''}`}
+                onClick={() => setMainTab('mybookings')}
+              >
+                <span className="pill-icon">📋</span>
+                <span className="pill-text-desktop">My Bookings</span>
+                <span className="pill-text-mobile">My Bookings</span>
+              </button>
+              {mainTab === 'stays' && (<>
               {CATEGORY_TABS.map(tab => (
                 <button
                   key={tab.type}
@@ -1185,6 +1283,7 @@ export default function SmartStayPage() {
                   <span className="pill-text-mobile">{tab.shortLabel}</span>
                 </button>
               ))}
+              </>)}
             </div>
           </div>
 
@@ -1652,7 +1751,7 @@ export default function SmartStayPage() {
                 </button>
               </div>
 
-              {bookingSuccess ? (
+              {bookingConfirmed ? (
                 <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
                   <h3 style={{ fontFamily: 'Cinzel, serif', color: C.gold, margin: '0 0 0.5rem' }}>Booking Confirmed!</h3>
@@ -1687,8 +1786,8 @@ export default function SmartStayPage() {
                         type="number" 
                         min={1} 
                         max={14}
-                        value={bookingDays}
-                        onChange={e => setBookingDays(Math.max(1, parseInt(e.target.value) || 1))}
+                        value={numRooms}
+                        onChange={e => setNumRooms(Math.max(1, parseInt(e.target.value) || 1))}
                         style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontWeight: 700 }}
                       />
                     </div>
@@ -1700,8 +1799,8 @@ export default function SmartStayPage() {
                         type="number" 
                         min={1} 
                         max={8}
-                        value={bookingGuests}
-                        onChange={e => setBookingGuests(Math.max(1, parseInt(e.target.value) || 1))}
+                        value={numGuests}
+                        onChange={e => setNumGuests(Math.max(1, parseInt(e.target.value) || 1))}
                         style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: C.card, border: `1px solid ${C.border}`, color: C.text, fontWeight: 700 }}
                       />
                     </div>
@@ -1709,17 +1808,17 @@ export default function SmartStayPage() {
 
                   <div style={{ background: C.card, padding: '1rem', borderRadius: '12px', border: `1px solid ${C.border}`, marginBottom: '1.5rem', fontSize: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ color: C.muted }}>₹{bookingModal.price.toLocaleString()} × {bookingDays} night(s)</span>
-                      <span>₹{(bookingModal.price * bookingDays).toLocaleString()}</span>
+                      <span style={{ color: C.muted }}>₹{bookingModal.price.toLocaleString()} × {numRooms} night(s)</span>
+                      <span>₹{(bookingModal.price * numRooms).toLocaleString()}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ color: C.muted }}>Cultural Preservation Levy (2%)</span>
-                      <span>₹{Math.round(bookingModal.price * bookingDays * 0.02).toLocaleString()}</span>
+                      <span>₹{Math.round(bookingModal.price * numRooms * 0.02).toLocaleString()}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: `1px solid ${C.border}`, fontWeight: 800, fontSize: '1rem' }}>
                       <span>Total Amount</span>
                       <span style={{ color: C.gold }}>
-                        ₹{Math.round(bookingModal.price * bookingDays * 1.02).toLocaleString()}
+                        ₹{Math.round(bookingModal.price * numRooms * 1.02).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1749,3 +1848,4 @@ export default function SmartStayPage() {
     </>
   );
 }
+

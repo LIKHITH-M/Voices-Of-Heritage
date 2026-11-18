@@ -33,6 +33,30 @@ export default defineConfig({
         target: 'http://localhost:5003',
         changeOrigin: true,
       },
+      '/api/bookings': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/api/stays': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/api/guides': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/api/food': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/api/wellness': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/api/tickets': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
     },
   },
 });

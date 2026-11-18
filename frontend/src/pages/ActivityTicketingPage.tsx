@@ -19,11 +19,12 @@ import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import VoHLogo from '@/components/VoHLogo';
 import QRCode from 'qrcode';
+import axios from 'axios';
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 type Nationality = 'indian' | 'nri';
 type ActivityCategory = 'entry-ticket' | 'activity';
-type BookingStep = 'search' | 'list' | 'detail' | 'form' | 'qr';
+type BookingStep = 'search' | 'list' | 'detail' | 'form' | 'qr' | 'confirmation' | 'my-bookings';
 
 interface Activity {
   id: string;
@@ -362,6 +363,12 @@ export default function ActivityTicketingPage() {
   const [generating,    setGenerating]    = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  // New state for real Razorpay integration + My Bookings
+  const [bookingConfirmed, setBookingConfirmed] = useState<any>(null);
+  const [paymentError,     setPaymentError]     = useState('');
+  const [myBookings,       setMyBookings]       = useState<any[]>([]);
+  const [myBookingsLoading, setMyBookingsLoading] = useState(false);
+
   const [form, setForm] = useState<BookingForm>({
     name: '', email: '', phone: '', nationality: 'indian',
     idType: 'aadhaar', idNumber: '', visitDate: '', visitTime: '',
@@ -476,126 +483,149 @@ export default function ActivityTicketingPage() {
     (catFilter === 'all' || a.category === catFilter)
   );
 
-  const loadCashfreeScript = (): Promise<boolean> => {
+  const loadRazorpay = (): Promise<boolean> => {
     return new Promise((resolve) => {
-      if ((window as any).Cashfree) {
-        resolve(true);
-        return;
-      }
+      if ((window as any).Razorpay) { resolve(true); return; }
       const script = document.createElement('script');
-      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
   };
 
-  /* ── Generate QR ── */
-  const handleBook = useCallback(async () => {
+  /* ── Razorpay Payment Handler ── */
+  const handlePayment = useCallback(async () => {
     if (!selectedAct) return;
     setGenerating(true);
+    setPaymentError('');
 
     const total = calcTotal(selectedAct, form);
+    const userId = localStorage.getItem('voh_user_id') || 'guest';
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_AI_PLANNER_API_URL 
-        ? import.meta.env.VITE_AI_PLANNER_API_URL
-        : 'https://voices-of-heritage.onrender.com/api';
+      // 1. Create order on backend
+      const { data } = await axios.post('/api/bookings/create-order', {
+        userId,
+        monumentId: selectedAct.id,
+        monumentName: selectedAct.name,
+        visitDate: form.visitDate,
+        timeSlot: form.visitTime || selectedAct.schedule,
+        ticketType: form.nationality === 'indian' ? 'indian' : 'nri',
+        numTickets: form.adults + form.children + form.seniors,
+        totalAmount: total,
+      });
 
-      let paymentResponse: any = {
-        cf_payment_id: 'mock_pay_free',
-        cf_order_id: 'order_mock_free'
+      // 2. If total is 0 (free), skip Razorpay and verify directly
+      if (total === 0) {
+        const verify = await axios.post('/api/bookings/verify-payment', {
+          bookingId: data.bookingId,
+          razorpay_order_id: data.orderId || 'free_order',
+          razorpay_payment_id: 'free_payment',
+          razorpay_signature: 'free_signature',
+        });
+        const confirmedBooking = verify.data.booking;
+        setBookingConfirmed(confirmedBooking);
+
+        // Build local QR for display
+        const qrPayload = confirmedBooking.qrData || JSON.stringify({ bookingId: confirmedBooking.bookingId });
+        const qrImageUrl = await QRCode.toDataURL(qrPayload, {
+          width: 280, margin: 2,
+          color: { dark: '#050505', light: '#fffbe6' },
+          errorCorrectionLevel: 'H',
+        });
+        setBooking({
+          id: confirmedBooking.bookingId,
+          activity: selectedAct,
+          form,
+          totalINR: 0,
+          createdAt: confirmedBooking.createdAt || new Date().toISOString(),
+          qrData: qrPayload,
+          qrImageUrl,
+        });
+        setGenerating(false);
+        setStep('confirmation');
+        return;
+      }
+
+      // 3. Load Razorpay SDK
+      const loaded = await loadRazorpay();
+      if (!loaded) {
+        throw new Error('Failed to load Razorpay SDK. Check your network connection.');
+      }
+
+      // 4. Open Razorpay checkout
+      const options = {
+        key: 'rzp_test_ToUXkFkXqdjYh8',
+        amount: data.amount,
+        currency: data.currency || 'INR',
+        name: 'Voices of Heritage',
+        description: `Visit to ${selectedAct.name}`,
+        order_id: data.orderId,
+        handler: async (response: any) => {
+          try {
+            // 5. Verify payment on backend
+            const verify = await axios.post('/api/bookings/verify-payment', {
+              bookingId: data.bookingId,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            const confirmedBooking = verify.data.booking;
+            setBookingConfirmed(confirmedBooking);
+
+            const qrPayload = confirmedBooking.qrData || JSON.stringify({ bookingId: confirmedBooking.bookingId });
+            const qrImageUrl = await QRCode.toDataURL(qrPayload, {
+              width: 280, margin: 2,
+              color: { dark: '#050505', light: '#fffbe6' },
+              errorCorrectionLevel: 'H',
+            });
+            setBooking({
+              id: confirmedBooking.bookingId,
+              activity: selectedAct,
+              form,
+              totalINR: total,
+              createdAt: confirmedBooking.createdAt || new Date().toISOString(),
+              qrData: qrPayload,
+              qrImageUrl,
+            });
+            setStep('confirmation');
+          } catch (err: any) {
+            setPaymentError('Payment verified but booking failed. Contact support.');
+          }
+        },
+        prefill: { name: form.name || 'Heritage Traveller', email: form.email, contact: form.phone },
+        theme: { color: '#d97706' },
+        modal: { ondismiss: () => setGenerating(false) },
       };
 
-      // Only launch payment gateway if amount is greater than 0
-      if (total > 0) {
-        const isLoaded = await loadCashfreeScript();
-        if (!isLoaded) {
-          throw new Error('Failed to load Cashfree payment gateway SDK. Please check your network connection.');
-        }
-
-        // Initialize Cashfree Order on Backend
-        const orderRes = await fetch(`${API_BASE_URL}/tickets/cashfree-order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: total, form })
-        });
-        const orderData = await orderRes.json();
-        
-        if (!orderData.success) {
-          throw new Error(orderData.message || 'Failed to initialize Cashfree payment gateway.');
-        }
-
-        const { payment_session_id, order_id, cf_env, isMock } = orderData;
-
-        // If in test / demo development mode without live keys, seamlessly complete
-        if (isMock || !payment_session_id || payment_session_id.startsWith('mock_')) {
-          paymentResponse = {
-            cf_payment_id: `cf_demo_${Date.now()}`,
-            cf_order_id: order_id || `order_mock_${Date.now()}`
-          };
-        } else {
-          // Open Cashfree Modal Checkout dialog
-          const cashfree = (window as any).Cashfree({ mode: cf_env || 'sandbox' });
-          const paymentResult = await new Promise((resolve, reject) => {
-            cashfree.checkout({
-              paymentSessionId: payment_session_id,
-              redirectTarget: '_modal'
-            }).then((result: any) => {
-              if (result && result.error) {
-                reject(new Error(result.error.message || 'Payment cancelled or failed.'));
-              } else {
-                resolve(result || { cf_payment_id: `cf_${Date.now()}`, cf_order_id: order_id });
-              }
-            }).catch((err: any) => reject(err));
-          });
-
-          paymentResponse = paymentResult;
-        }
-      }
-
-      // Proceed with booking after payment success
-      const response = await fetch(`${API_BASE_URL}/tickets/book`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          activity: selectedAct,
-          form: {
-            ...form,
-            visitTime: form.visitTime || 'Site default schedule'
-          },
-          totalINR: total,
-          ...paymentResponse
-        })
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', (_resp: any) => {
+        setPaymentError('Payment failed. Please try again.');
+        setGenerating(false);
       });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to book ticket');
-      }
-
-      const bookingId = data.ticket.ticketId;
-      const createdAt = data.ticket.createdAt || new Date().toISOString();
-
-      const qrPayload = JSON.stringify({ ticketId: bookingId });
-
-      const qrImageUrl = await QRCode.toDataURL(qrPayload, {
-        width: 280,
-        margin: 2,
-        color: { dark: '#050505', light: '#fffbe6' },
-        errorCorrectionLevel: 'H',
-      });
-
-      setBooking({ id: bookingId, activity: selectedAct, form, totalINR: total, createdAt, qrData: qrPayload, qrImageUrl });
+      rzp.open();
       setGenerating(false);
-      setStep('qr');
     } catch (err: any) {
-      console.error('Error booking:', err);
-      alert(err.message || 'Failed to book. Ensure backend is running.');
+      console.error('Payment error:', err);
+      setPaymentError(err.message || 'Failed to initiate payment. Ensure backend is running.');
       setGenerating(false);
     }
   }, [selectedAct, form]);
+
+  /* ── Fetch My Bookings ── */
+  const fetchMyBookings = useCallback(async () => {
+    const userId = localStorage.getItem('voh_user_id');
+    if (!userId) return;
+    setMyBookingsLoading(true);
+    try {
+      const { data } = await axios.get(`/api/bookings/user/${userId}`);
+      setMyBookings(data.bookings || data || []);
+    } catch (err) {
+      console.error('Failed to fetch bookings:', err);
+    }
+    setMyBookingsLoading(false);
+  }, []);
 
   const downloadQR = () => {
     if (!booking) return;
@@ -969,7 +999,7 @@ export default function ActivityTicketingPage() {
 
           <div className="at-modal-foot">
             <button className="at-btn-ghost" onClick={() => setStep('list')}>Cancel</button>
-            <button className="at-btn-primary" disabled={!formValid || generating} onClick={handleBook}>
+            <button className="at-btn-primary" disabled={!formValid || generating} onClick={handlePayment}>
               {generating
                 ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'at-spin 1s linear infinite' }} /> Generating…</>
                 : '🎟️ Generate QR Ticket'}

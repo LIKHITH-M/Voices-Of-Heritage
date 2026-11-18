@@ -22,22 +22,32 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Routes ────────────────────────────────────────────────────
-const depkgRoutes  = require('./depkg/routes/depkgRoutes');
-const aiRoutes     = require('./routes/ai.routes');
-const ticketRoutes = require('./routes/ticketRoutes');
-const tripRoutes   = require('./routes/trips.routes');
-const mapRoutes    = require('./routes/maps.routes');
+const depkgRoutes    = require('./depkg/routes/depkgRoutes');
+const aiRoutes       = require('./routes/ai.routes');
+const ticketRoutes   = require('./routes/ticketRoutes');
+const tripRoutes     = require('./routes/trips.routes');
+const mapRoutes      = require('./routes/maps.routes');
+const bookingRoutes  = require('./routes/booking.routes');
+const stayRoutes     = require('./routes/stay.routes');
+const guideRoutes    = require('./routes/guide.routes');
+const foodRoutes     = require('./routes/food.routes');
+const wellnessRoutes = require('./routes/wellness.routes');
 
-app.use('/api/depkg',   depkgRoutes);
-app.use('/depkg',       depkgRoutes);
-app.use('/api/ai',      aiRoutes);
-app.use('/ai',          aiRoutes);
-app.use('/api/tickets', ticketRoutes);
-app.use('/tickets',     ticketRoutes);
-app.use('/api/trips',   tripRoutes);
-app.use('/trips',       tripRoutes);
-app.use('/api/maps',    mapRoutes);
-app.use('/maps',        mapRoutes);
+app.use('/api/depkg',    depkgRoutes);
+app.use('/depkg',        depkgRoutes);
+app.use('/api/ai',       aiRoutes);
+app.use('/ai',           aiRoutes);
+app.use('/api/tickets',  ticketRoutes);
+app.use('/tickets',      ticketRoutes);
+app.use('/api/trips',    tripRoutes);
+app.use('/trips',        tripRoutes);
+app.use('/api/maps',     mapRoutes);
+app.use('/maps',         mapRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/stays',    stayRoutes);
+app.use('/api/guides',   guideRoutes);
+app.use('/api/food',     foodRoutes);
+app.use('/api/wellness', wellnessRoutes);
 
 app.get('/api/health', (_, res) => res.json({ status: 'OK', service: 'voh-ai-planner', timestamp: new Date().toISOString() }));
 
