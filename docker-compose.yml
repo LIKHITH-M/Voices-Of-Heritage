@@ -37,7 +37,7 @@ services:
       - voh-network
 
   # ─────────────────────────────────────────
-  # Backend Microservices
+  # Core Production Microservices
   # ─────────────────────────────────────────
   auth-service:
     build: ./backend/auth-service
@@ -51,167 +51,30 @@ services:
     networks:
       - voh-network
 
-  dashboard-service:
-    build: ./backend/dashboard-service
+  ai-planner-service:
+    build: ./backend/ai-planner-service
     restart: unless-stopped
     env_file: .env
     ports:
-      - "4002:4002"
-    depends_on:
-      - postgres
-    networks:
-      - voh-network
-
-  immersive-service:
-    build: ./backend/immersive-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4003:4003"
+      - "5002:5002"
     depends_on:
       - mongo
     networks:
       - voh-network
 
-  archives-service:
-    build: ./backend/archives-service
+  research-service:
+    build: ./backend/research-service
     restart: unless-stopped
     env_file: .env
     ports:
-      - "4004:4004"
+      - "5003:5003"
     depends_on:
       - mongo
-      - postgres
-    networks:
-      - voh-network
-
-  smart-utilities:
-    build: ./backend/smart-utilities
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4005:4005"
-    depends_on:
-      - redis
-    networks:
-      - voh-network
-
-  crowd-service:
-    build: ./backend/crowd-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4006:4006"
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - voh-network
-
-  stay-service:
-    build: ./backend/stay-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4007:4007"
-    depends_on:
-      - postgres
-    networks:
-      - voh-network
-
-  artisan-service:
-    build: ./backend/artisan-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4008:4008"
-    depends_on:
-      - postgres
-      - mongo
-    networks:
-      - voh-network
-
-  conservation-service:
-    build: ./backend/conservation-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4009:4009"
-    depends_on:
-      - postgres
-    networks:
-      - voh-network
-
-  food-service:
-    build: ./backend/food-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4010:4010"
-    depends_on:
-      - postgres
-      - mongo
-    networks:
-      - voh-network
-
-  wellness-service:
-    build: ./backend/wellness-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4011:4011"
-    depends_on:
-      - postgres
-    networks:
-      - voh-network
-
-  school-service:
-    build: ./backend/school-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4012:4012"
-    depends_on:
-      - postgres
-    networks:
-      - voh-network
-
-  activity-service:
-    build: ./backend/activity-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4013:4013"
-    depends_on:
-      - postgres
-    networks:
-      - voh-network
-
-  community-service:
-    build: ./backend/community-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4014:4014"
-    depends_on:
-      - postgres
-    networks:
-      - voh-network
-
-  partnerships-service:
-    build: ./backend/partnerships-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "4015:4015"
-    depends_on:
-      - postgres
-      - redis
     networks:
       - voh-network
 
   # ─────────────────────────────────────────
-  # Frontend
+  # Frontend Application
   # ─────────────────────────────────────────
   frontend:
     build: ./frontend
@@ -221,23 +84,8 @@ services:
       - "3000:3000"
     depends_on:
       - auth-service
-      - dashboard-service
-    networks:
-      - voh-network
-
-  # ─── Research Service (PTKG) ──────────────────────────────────────────────
-  # Phase 2+ of the PTKG research implementation.
-  # Runs alongside ai-planner-service (port 5002).
-  # Handles: experience ingestion, observation extraction, preference inference,
-  #          PTKG management, graph retrieval, context compression, RAG, evaluation.
-  research-service:
-    build: ./backend/research-service
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "5003:5003"
-    depends_on:
-      - mongo
+      - ai-planner-service
+      - research-service
     networks:
       - voh-network
 

@@ -53,10 +53,6 @@ coverage/
 htmlcov/
 .coverage
 
-# Blockchain artifacts
-blockchain/artifacts/
-blockchain/cache/
-
 # ML model weights (too large for git — use DVC or cloud storage)
 ml-models/**/*.h5
 ml-models/**/*.pkl

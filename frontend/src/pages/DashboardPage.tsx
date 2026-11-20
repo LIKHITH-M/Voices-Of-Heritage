@@ -18,7 +18,6 @@ const MODULES = [
   { emoji: '🧘', title: 'Wellness',               desc: 'Meditation retreats & rituals',      href: '/wellness',        phase: 11 },
   { emoji: '🍛', title: 'Culinary Heritage',      desc: 'Food trails & Cook with a Local',    href: '/food',            phase: 12 },
   { emoji: '🎒', title: 'Activity Booking',       desc: 'Treks, viewings & photo tours',      href: '/activity',        phase: 13 },
-  { emoji: '🎓', title: 'School Programs',        desc: 'Virtual visits & curriculum kits',   href: '/school',          phase: 14 },
   { emoji: '🛍️', title: 'Artisan Marketplace',   desc: 'Certified crafts & live demos',      href: '/artisan',         phase: 15 },
   { emoji: '💰', title: 'Community',              desc: 'Guides, bonds & barter board',       href: '/community',       phase: 16 },
 ];

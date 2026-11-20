@@ -18,7 +18,6 @@ const MENU_ITEMS = [
   { id: 'conservation', icon: '🌿', label: 'Conservation',           href: '/conservation' },
   { id: 'wellness',     icon: '🧘', label: 'Wellness',               href: '/wellness' },
   { id: 'food',         icon: '🍛', label: 'Culinary Heritage',      href: '/food' },
-  { id: 'school',       icon: '🎓', label: 'School Programs',        href: '/school' },
   { id: 'artisan',      icon: '🛍️', label: 'Marketplace',  href: '/artisan' },
   { id: 'community',    icon: '💰', label: 'Community',              href: '/community' },
 ];

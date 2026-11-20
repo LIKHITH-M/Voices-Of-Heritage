@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+// @ts-ignore
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LandingPage from '@/pages/LandingPage';
@@ -25,7 +26,6 @@ import SmartStayPage from '@/pages/SmartStayPage';
 import ConservationPage from '@/pages/ConservationPage';
 import WellnessPage from '@/pages/WellnessPage';
 import FoodHeritagePage from '@/pages/FoodHeritagePage';
-import SchoolProgramsPage from '@/pages/SchoolProgramsPage';
 import ArtisanMarketplacePage from '@/pages/ArtisanMarketplacePage';
 import CommunityPage from '@/pages/CommunityPage';
 import StaffPortalPage from '@/pages/StaffPortalPage';
@@ -40,6 +40,7 @@ import PostTripReflectionPage from '@/pages/PostTripReflectionPage';
 import EvaluationDashboardPage from '@/pages/EvaluationDashboardPage';
 
 // AI Trip Planner Layout & Pages (from AI-TripPlanner-main)
+// @ts-ignore
 import Layout from '@/components/layout/Layout';
 // @ts-ignore
 import TripPlanner from '@/pages/TripPlanner';
@@ -104,7 +105,6 @@ export default function App() {
                   <Route path="/conservation" element={<ConservationPage />} />
                   <Route path="/wellness" element={<WellnessPage />} />
                   <Route path="/food" element={<FoodHeritagePage />} />
-                  <Route path="/school" element={<SchoolProgramsPage />} />
                   <Route path="/artisan" element={<ArtisanMarketplacePage />} />
                   <Route path="/community" element={<CommunityPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
