@@ -7,13 +7,14 @@ Write-Host "==========================================================" -Foregro
 $ports = @(3000, 4001, 5002, 5003)
 foreach ($port in $ports) {
     try {
-        $conns = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-        if ($conns) {
-            $pids = $conns | Select-Object -ExpandProperty OwningProcess -Unique
-            foreach ($p in $pids) {
-                if ($p -gt 0) {
-                    Write-Host "Stopping process on port $port (PID: $p)..." -ForegroundColor Yellow
-                    Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
+        $lines = netstat -ano | Select-String ":$port\s"
+        if ($lines) {
+            foreach ($line in $lines) {
+                $tokens = ($line.Line.Trim() -split '\s+')
+                $pidToKill = $tokens[-1]
+                if ($pidToKill -match '^\d+$' -and [int]$pidToKill -gt 0 -and [int]$pidToKill -ne $PID) {
+                    Write-Host "Stopping process on port $port (PID: $pidToKill)..." -ForegroundColor Yellow
+                    Stop-Process -Id ([int]$pidToKill) -Force -ErrorAction SilentlyContinue
                 }
             }
         } else {

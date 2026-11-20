@@ -23,6 +23,13 @@ const mongoose = require('mongoose');
 const morgan = require('morgan');
 const helmet = require('helmet');
 
+process.on('unhandledRejection', (reason) => {
+  console.warn('[research-service] Unhandled Promise Rejection (handled safely):', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[research-service] Uncaught Exception (handled safely):', err?.message || err);
+});
+
 const app = express();
 const PORT = process.env.RESEARCH_SERVICE_PORT || 5003;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/voices_heritage';

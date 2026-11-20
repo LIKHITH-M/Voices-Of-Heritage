@@ -1,7 +1,7 @@
 {
   "1meKAu3L6PdCMIU4N1XluE2PVGX2": {
     "userId": "1meKAu3L6PdCMIU4N1XluE2PVGX2",
-    "updatedAt": "2026-11-18T12:45:28.041Z",
+    "updatedAt": "2026-11-20T06:17:51.612Z",
     "knowledgeLayers": {
       "facts": [
         {
@@ -13,6 +13,16 @@
           "destination": "Mysore, Belur",
           "experienceType": "place",
           "timestamp": "2026-11-18T12:43:58.409Z"
+        },
+        {
+          "type": "fact",
+          "subject": "1meKAu3L6PdCMIU4N1XluE2PVGX2",
+          "predicate": "visited",
+          "object": "mysuru palace",
+          "tripId": "6affdaa446e9f92b2490d9b0",
+          "destination": "mysuru palace",
+          "experienceType": "trip",
+          "timestamp": "2026-11-25T00:00:00.000Z"
         },
         {
           "type": "fact",

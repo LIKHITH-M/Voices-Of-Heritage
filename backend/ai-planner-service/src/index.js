@@ -8,6 +8,13 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
+process.on('unhandledRejection', (reason) => {
+  console.warn('[AI Planner] Unhandled Promise Rejection (handled safely):', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[AI Planner] Uncaught Exception (handled safely):', err?.message || err);
+});
+
 const app = express();
 const PORT = process.env.AI_PLANNER_PORT || 5002;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/voices_heritage';

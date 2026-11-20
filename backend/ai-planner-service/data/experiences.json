@@ -1,5 +1,33 @@
 [
   {
+    "_id": "EXP_1795155461400_E20708E6",
+    "experienceId": "EXP_1795155461400_E20708E6",
+    "userId": "1meKAu3L6PdCMIU4N1XluE2PVGX2",
+    "eventKey": "trip:6affdaa446e9f92b2490d9b0",
+    "tripId": "6affdaa446e9f92b2490d9b0",
+    "placeId": null,
+    "activityId": null,
+    "experienceType": "trip",
+    "title": "Trip to mysuru palace",
+    "destination": "mysuru palace",
+    "region": "",
+    "placeName": "mysuru palace",
+    "visitStatus": "visited",
+    "feedbackStatus": "pending",
+    "sourceType": "auto_generated",
+    "plannedData": {
+      "destination": "mysuru palace",
+      "plannedDate": "2026-11-20T00:00:00.000Z",
+      "plannedDurationHours": 48
+    },
+    "actualData": {},
+    "bookingData": {},
+    "moduleMetadata": {},
+    "visitedAt": "2026-11-25T00:00:00.000Z",
+    "createdAt": "2026-11-20T06:17:41.400Z",
+    "updatedAt": "2026-11-20T06:17:41.400Z"
+  },
+  {
     "_id": "EXP_1795005838409_0FC39B58",
     "experienceId": "EXP_1795005838409_0FC39B58",
     "eventKey": "trip:6afd9c45595f4b50f2e61122:d1:a0",
@@ -129,6 +157,6 @@
     "moduleMetadata": {},
     "visitedAt": "2027-11-19",
     "createdAt": "2026-11-18T12:43:29.103Z",
-    "updatedAt": "2026-11-18T12:45:28.023Z"
+    "updatedAt": "2026-11-20T06:17:51.595Z"
   }
 ]

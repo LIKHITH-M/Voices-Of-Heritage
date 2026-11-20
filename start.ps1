@@ -9,13 +9,12 @@ Write-Host "Cleaning up any stale processes on ports 3000, 4001, 5002, 5003..." 
 $ports = @(3000, 4001, 5002, 5003)
 foreach ($port in $ports) {
     try {
-        $conns = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-        if ($conns) {
-            $pids = $conns | Select-Object -ExpandProperty OwningProcess -Unique
-            foreach ($p in $pids) {
-                if ($p -gt 0) {
-                    Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
-                }
+        $lines = netstat -ano | Select-String ":$port\s"
+        foreach ($line in $lines) {
+            $tokens = ($line.Line.Trim() -split '\s+')
+            $pidToKill = $tokens[-1]
+            if ($pidToKill -match '^\d+$' -and [int]$pidToKill -gt 0 -and [int]$pidToKill -ne $PID) {
+                Stop-Process -Id ([int]$pidToKill) -Force -ErrorAction SilentlyContinue
             }
         }
     } catch {}
