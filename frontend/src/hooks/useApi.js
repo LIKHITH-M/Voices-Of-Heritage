@@ -7,7 +7,7 @@ export const useApi = (queryKey, queryFn, options = {}) => {
   const {
     enabled = true,
     staleTime = 5 * 60 * 1000, // 5 minutes
-    cacheTime = 10 * 60 * 1000, // 10 minutes
+    gcTime = 10 * 60 * 1000, // 10 minutes (gcTime in v5)
     refetchOnWindowFocus = false,
     retry = 1,
     ...queryOptions
@@ -18,7 +18,7 @@ export const useApi = (queryKey, queryFn, options = {}) => {
     queryFn,
     enabled,
     staleTime,
-    cacheTime,
+    gcTime,
     refetchOnWindowFocus,
     retry,
     ...queryOptions,
