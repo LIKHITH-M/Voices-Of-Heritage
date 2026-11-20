@@ -40,60 +40,83 @@ export const EvaluationDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const [data, setData] = useState<ComparativeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchMetrics() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${RESEARCH_API}/research/evaluation/metrics`);
-        if (!res.ok) throw new Error('Evaluation service offline or database empty');
-        const json = await res.json();
-        if (json.success && json.data) {
-          setData(json.data);
-        }
-      } catch (err: any) {
-        // Fallback default research evaluation metrics for illustration when starting fresh
-        setData({
-          totalExperiments: 12,
-          baseline: {
-            count: 6,
-            avgAlignment: 0.38,
-            avgEfficiency: 0.74,
-            avgConstraintSatisfaction: 0.82,
-            avgDiversity: 0.45,
-            avgLatencyMs: 1420,
-          },
-          research: {
-            count: 6,
-            avgAlignment: 0.86,
-            avgEfficiency: 0.91,
-            avgConstraintSatisfaction: 0.96,
-            avgDiversity: 0.78,
-            avgLatencyMs: 1680,
-          },
-          recentRuns: [
-            {
-              runId: 'exp-run-001',
-              destination: 'Hampi, Karnataka',
-              mode: 'research',
-              metrics: { preferenceAlignmentScore: 0.88, spatioTemporalEfficiency: 0.92, constraintSatisfactionRate: 1.0 },
-              createdAt: new Date().toISOString(),
-            },
-            {
-              runId: 'exp-run-002',
-              destination: 'Hampi, Karnataka',
-              mode: 'baseline',
-              metrics: { preferenceAlignmentScore: 0.40, spatioTemporalEfficiency: 0.72, constraintSatisfactionRate: 0.80 },
-              createdAt: new Date(Date.now() - 3600000).toISOString(),
-            },
-          ],
-        });
-      } finally {
-        setIsLoading(false);
+  const fetchMetrics = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${RESEARCH_API}/research/evaluation/metrics`);
+      if (!res.ok) throw new Error('Evaluation service offline or database empty');
+      const json = await res.json();
+      if (json.success && json.data) {
+        setData(json.data);
       }
+    } catch (err: any) {
+      // Fallback default research evaluation metrics for illustration when starting fresh
+      setData({
+        totalExperiments: 12,
+        baseline: {
+          count: 6,
+          avgAlignment: 0.38,
+          avgEfficiency: 0.74,
+          avgConstraintSatisfaction: 0.82,
+          avgDiversity: 0.45,
+          avgLatencyMs: 1420,
+        },
+        research: {
+          count: 6,
+          avgAlignment: 0.86,
+          avgEfficiency: 0.91,
+          avgConstraintSatisfaction: 0.96,
+          avgDiversity: 0.78,
+          avgLatencyMs: 1680,
+        },
+        recentRuns: [
+          {
+            runId: 'exp-run-001',
+            destination: 'Hampi, Karnataka',
+            mode: 'research',
+            metrics: { preferenceAlignmentScore: 0.88, spatioTemporalEfficiency: 0.92, constraintSatisfactionRate: 1.0 },
+            createdAt: new Date().toISOString(),
+          },
+          {
+            runId: 'exp-run-002',
+            destination: 'Hampi, Karnataka',
+            mode: 'baseline',
+            metrics: { preferenceAlignmentScore: 0.40, spatioTemporalEfficiency: 0.72, constraintSatisfactionRate: 0.80 },
+            createdAt: new Date(Date.now() - 3600000).toISOString(),
+          },
+        ],
+      });
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleRunBenchmark = async () => {
+    setIsSeeding(true);
+    try {
+      const res = await fetch(`${RESEARCH_API}/research/evaluation/seed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setData(json.data);
+      } else {
+        await fetchMetrics();
+      }
+    } catch (err) {
+      console.warn('Failed to seed benchmark, re-fetching metrics:', err);
+      await fetchMetrics();
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  useEffect(() => {
     fetchMetrics();
   }, []);
 
@@ -111,6 +134,13 @@ export const EvaluationDashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 text-xs">
+          <button
+            onClick={handleRunBenchmark}
+            disabled={isSeeding}
+            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold transition flex items-center gap-1.5 shadow-lg shadow-amber-500/20 disabled:opacity-50"
+          >
+            {isSeeding ? 'Running Benchmark...' : '⚡ Run Benchmark Suite'}
+          </button>
           <Link
             to="/trip-planner"
             className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-medium transition"
@@ -144,6 +174,26 @@ export const EvaluationDashboardPage: React.FC = () => {
             personalization accuracy, spatial efficiency, and constraint satisfaction.
           </p>
         </div>
+
+        {/* Cold-start prompt if no runs logged yet */}
+        {!isLoading && data?.totalExperiments === 0 && (
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-sm font-bold text-amber-400">Cold Start: 0 Experiments Logged Yet</h3>
+              <p className="text-xs text-neutral-300 mt-1 max-w-2xl">
+                This dashboard measures empirical head-to-head performance between Mode A (Few-Shot Prompting) and Mode B (PTKG Graph + RAG).
+                You can generate trips in Mode A and Mode B on the AI Trip Planner, or click the button to populate the evaluation benchmark dataset.
+              </p>
+            </div>
+            <button
+              onClick={handleRunBenchmark}
+              disabled={isSeeding}
+              className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs whitespace-nowrap transition shadow-lg shadow-amber-500/20 disabled:opacity-50"
+            >
+              {isSeeding ? 'Generating...' : '⚡ Generate Benchmark Experiments'}
+            </button>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="py-20 text-center text-neutral-400">Loading experimental metrics...</div>

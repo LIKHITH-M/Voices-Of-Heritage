@@ -12,6 +12,7 @@ const router = express.Router();
 const evaluationController = require('../controllers/evaluation.controller');
 
 router.post('/log', evaluationController.logRun);
+router.post('/seed', evaluationController.seedBenchmark);
 router.get('/metrics', evaluationController.getMetrics);
 router.get('/metrics/:userId', evaluationController.getMetrics);
 

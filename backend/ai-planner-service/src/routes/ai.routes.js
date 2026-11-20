@@ -151,6 +151,7 @@ function generateKGItinerary(destination, duration, contextPack, options = {}) {
 }
 
 const handleGenerateItinerary = async (req, res) => {
+  const startTime = Date.now();
   try {
     const userId = req.body.userId || 'anonymous';
     const mode = req.body.mode || 'research'; // 'baseline' (Mode A) vs 'research' (Mode B)
@@ -277,6 +278,25 @@ const handleGenerateItinerary = async (req, res) => {
       fallbackUsed = true;
       verificationResult = verifyItinerary(itineraryData, contextPack);
     }
+
+    // Asynchronously log this experiment run to research-service for Phase 17 Evaluation
+    fetch(`${RESEARCH_SERVICE_URL}/api/research/evaluation/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        destination,
+        mode,
+        durationDays: requestedDays,
+        generationTimeMs: Date.now() - startTime,
+        verificationScore: verificationResult?.score || 5,
+        ptkgContextUsed: mode === 'research',
+        ragChunksUsed: ragChunks?.length || 0,
+        itinerary: itineraryData,
+        ptkgContext: ptkgContext || {},
+        verificationResult: verificationResult || {},
+      }),
+    }).catch((err) => console.warn('[AI] Failed to log experiment to research-service:', err.message));
 
     res.json({
       success: true,
