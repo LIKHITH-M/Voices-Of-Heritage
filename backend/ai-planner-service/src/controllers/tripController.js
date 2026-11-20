@@ -35,16 +35,26 @@ const createTrip = async (req, res) => {
     // Determine status: explicitly set, or upcoming
     let tripStatus = status || "upcoming";
 
+    const parseSafeDate = (d, fallback) => {
+      if (!d) return fallback;
+      const parsed = new Date(d);
+      return isNaN(parsed.getTime()) ? fallback : parsed;
+    };
+
+    const durationDays = parseInt(preferences?.duration) || 1;
+    const safeStart = parseSafeDate(startDate, new Date());
+    const safeEnd = parseSafeDate(endDate, new Date(safeStart.getTime() + durationDays * 24 * 60 * 60 * 1000));
+
     const tripData = {
       userId: userId || req.headers["x-user-id"] || "guest",
-      title: title || `Trip to ${destination?.city || 'Destination'}`,
-      description: description || `Trip to ${destination?.city || 'Destination'}`,
+      title: title || `Trip to ${destination?.city || (typeof destination === 'string' ? destination : 'Destination')}`,
+      description: description || `Trip to ${destination?.city || (typeof destination === 'string' ? destination : 'Destination')}`,
       destination: destination || { city: 'Destination', country: 'India', coordinates: { lat: 0, lng: 0 } },
-      preferences: preferences || { duration: 1, travelStyle: 'budget' },
+      preferences: preferences || { duration: durationDays, travelStyle: 'budget' },
       itinerary: itinerary || {},
       status: tripStatus,
-      startDate: startDate ? new Date(startDate) : new Date(),
-      endDate: endDate ? new Date(endDate) : new Date(),
+      startDate: safeStart,
+      endDate: safeEnd,
       notes: notes || "",
       isPublic: isPublic || false,
       tags: tags || [],

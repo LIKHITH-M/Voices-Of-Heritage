@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // Helper for local offline trip caching so trips are never lost
-const LS_TRIP_KEYS = ["voh_saved_trips", "voh_trips"];
+// Dedicated key for AI Planner trips (do not mix with voh_saved_trips from journal planner)
+const LS_TRIP_KEYS = ["voh_trips"];
 
 const getLocalTrips = () => {
   try {
@@ -10,7 +11,13 @@ const getLocalTrips = () => {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          // Filter out ghost/corrupted entries that lack destination and title
+          return parsed.filter((t) => {
+            if (!t || typeof t !== "object") return false;
+            const dest = t.destination?.city || (typeof t.destination === "string" ? t.destination : "");
+            const title = t.title || "";
+            return Boolean((dest && dest.trim().length > 0) || (title && title.trim().length > 0));
+          });
         }
       }
     }

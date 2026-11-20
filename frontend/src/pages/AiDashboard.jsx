@@ -19,6 +19,27 @@ import {
   FaUsers,
 } from "react-icons/fa";
 
+const parseDate = (val) => {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const formatDate = (val) => {
+  const d = parseDate(val);
+  if (!d) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const formatDateRange = (trip) => {
+  const s = parseDate(trip.startDate);
+  const e = parseDate(trip.endDate);
+  if (s && e) return `${formatDate(s)} - ${formatDate(e)}`;
+  if (s && !e) return `Starts ${formatDate(s)}`;
+  if (!s && e) return `Until ${formatDate(e)}`;
+  return "Flexible Dates";
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = { name: "Explorer", planType: "standard" };
@@ -438,27 +459,17 @@ const Dashboard = () => {
                       <span
                         className="text-xs shrink-0 px-2 py-0.5 rounded-full font-semibold"
                         style={
-                          new Date(trip.endDate) < new Date()
+                          parseDate(trip.endDate) && parseDate(trip.endDate) < new Date()
                             ? {background:'rgba(34,197,94,0.12)',color:'#4ade80',border:'1px solid rgba(34,197,94,0.3)'}
                             : {background:'rgba(255,178,36,0.12)',color:'#FFB224',border:'1px solid rgba(255,178,36,0.3)'}
                         }
                       >
-                        {new Date(trip.endDate) < new Date() ? "Completed" : "Upcoming"}
+                        {parseDate(trip.endDate) && parseDate(trip.endDate) < new Date() ? "Completed" : "Upcoming"}
                       </span>
                     </div>
 
                     <p className="text-xs md:text-sm mb-3 block w-full" style={{color:'#9CA3AF'}}>
-                      {new Date(trip.startDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}{" "}
-                      -{" "}
-                      {new Date(trip.endDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {formatDateRange(trip)}
                     </p>
 
                     <div className="hidden md:flex items-center justify-between text-xs md:text-sm mb-2 pt-2" style={{borderTop:'1px solid rgba(255,178,36,0.12)'}}>

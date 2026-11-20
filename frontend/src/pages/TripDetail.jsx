@@ -26,6 +26,28 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from "react-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+// Safe date parser
+const parseDate = (val) => {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const formatDate = (val) => {
+  const d = parseDate(val);
+  if (!d) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const formatDateRange = (trip) => {
+  const s = parseDate(trip?.startDate);
+  const e = parseDate(trip?.endDate);
+  if (s && e) return `${formatDate(s)} - ${formatDate(e)}`;
+  if (s && !e) return `Starts ${formatDate(s)}`;
+  if (!s && e) return `Until ${formatDate(e)}`;
+  return "Flexible Dates";
+};
+
 // Fix default icon paths for Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -465,17 +487,7 @@ const TripDetail = () => {
                     <div className="flex flex-wrap gap-2 md:gap-4 text-white/90 text-[10px] md:text-sm">
                       <div className="flex items-center">
                         <FaCalendar className="mr-1 md:mr-2" />
-                        {new Date(trip.startDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}{" "}
-                        -{" "}
-                        {new Date(trip.endDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {formatDateRange(trip)}
                       </div>
                       <div className="flex items-center">
                         <FaClock className="mr-1 md:mr-2" />
@@ -930,15 +942,17 @@ const TripDetail = () => {
                             </div>
                             <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
                               <span>
-                                {new Date(day.date).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    weekday: "long",
-                                    month: "long",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  }
-                                )}
+                                {parseDate(day.date)
+                                  ? parseDate(day.date).toLocaleDateString(
+                                      "en-US",
+                                      {
+                                        weekday: "long",
+                                        month: "long",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      }
+                                    )
+                                  : `Day ${day.day}`}
                               </span>
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
                                 {day.activities?.length || 0} activities

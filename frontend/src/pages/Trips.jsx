@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { useApi } from "../hooks/useApi";
 import { tripAPI } from "../services/api";
 import { Button, LoadingSpinner } from "../components/ui";
@@ -14,68 +15,144 @@ import {
   FaDollarSign,
   FaFilter,
   FaSearch,
+  FaTrash,
 } from "react-icons/fa";
+
+// Safe date parser — returns null if the value is missing or invalid
+const parseDate = (val) => {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+// Format a date value safely — returns null if missing/invalid
+const formatDate = (val) => {
+  const d = parseDate(val);
+  if (!d) return null;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+// Format date range safely or show intelligent fallback
+const formatDateRange = (trip) => {
+  const s = parseDate(trip.startDate);
+  const e = parseDate(trip.endDate);
+  if (s && e) {
+    return `${formatDate(s)} – ${formatDate(e)}`;
+  }
+  if (s && !e) {
+    return `Starts ${formatDate(s)}`;
+  }
+  if (!s && e) {
+    return `Until ${formatDate(e)}`;
+  }
+  if (trip.createdAt) {
+    const c = parseDate(trip.createdAt);
+    if (c) {
+      const duration = trip.preferences?.duration || trip.duration || 1;
+      const autoEnd = new Date(c.getTime() + duration * 24 * 60 * 60 * 1000);
+      return `${formatDate(c)} – ${formatDate(autoEnd)}`;
+    }
+  }
+  return "Flexible Dates";
+};
 
 const Trips = () => {
   const [filter, setFilter] = useState("all"); // all, upcoming, past, draft
   const [searchQuery, setSearchQuery] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
-  const { data: response, isLoading } = useApi(["trips"], () =>
+  const { data: response, isLoading, refetch } = useApi(["trips"], () =>
     tripAPI.getTrips().then((res) => res.data)
   );
+
+  // Automatic one-time cleanup of corrupt/ghost trips from localStorage
+  useEffect(() => {
+    try {
+      ["voh_trips", "voh_saved_trips"].forEach((key) => {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            const valid = arr.filter((t) => {
+              if (!t || typeof t !== "object") return false;
+              const dest = t.destination?.city || (typeof t.destination === "string" ? t.destination : "");
+              const title = t.title || "";
+              return Boolean((dest && dest.trim().length > 0) || (title && title.trim().length > 0));
+            });
+            if (valid.length !== arr.length) {
+              localStorage.setItem(key, JSON.stringify(valid));
+              if (refetch) refetch();
+            }
+          }
+        }
+      });
+    } catch (e) {}
+  }, [refetch]);
 
   const trips = response?.trips || [];
 
   const filteredTrips =
-    trips?.filter((trip) => {
-      // First apply search filter if there's a query
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const destinationStr = trip.destination?.city
-          ? `${trip.destination.city} ${trip.destination.country}`.toLowerCase()
-          : typeof trip.destination === "string"
-            ? trip.destination.toLowerCase()
-            : "";
-        const matchesSearch =
-          destinationStr.includes(query) ||
-          trip.description?.toLowerCase().includes(query) ||
-          trip.title?.toLowerCase().includes(query);
+    trips
+      ?.filter((trip) => {
+        if (!trip || typeof trip !== "object") return false;
+        // Purge ghost trips with no title and no destination
+        const dest = trip.destination?.city || (typeof trip.destination === "string" ? trip.destination : "");
+        const title = trip.title || "";
+        const hasContent = (dest && dest.trim().length > 0) || (title && title.trim().length > 0);
+        if (!hasContent) return false;
 
-        if (!matchesSearch) return false;
-      }
+        // Apply search filter if there's a query
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          const destinationStr = trip.destination?.city
+            ? `${trip.destination.city} ${trip.destination.country || ""}`.toLowerCase()
+            : typeof trip.destination === "string"
+              ? trip.destination.toLowerCase()
+              : "";
+          const matchesSearch =
+            destinationStr.includes(query) ||
+            trip.description?.toLowerCase().includes(query) ||
+            trip.title?.toLowerCase().includes(query);
 
-      // Then apply status/date filters
-      if (filter === "draft") {
-        return trip.status === "draft";
-      }
+          if (!matchesSearch) return false;
+        }
 
-      if (filter === "all") {
-        return true; // Show all trips
-      }
+        // Status/date filters
+        if (filter === "draft") {
+          return trip.status === "draft";
+        }
 
-      const now = new Date();
-      const endDate = trip.endDate ? new Date(trip.endDate) : null;
+        if (filter === "all") {
+          return true;
+        }
 
-      if (filter === "upcoming") {
-        return trip.status === "upcoming" || (!endDate || endDate >= now);
-      }
+        const now = new Date();
+        const startDate = parseDate(trip.startDate);
+        const endDate = parseDate(trip.endDate);
+        const hasNoDates = !startDate && !endDate;
 
-      if (filter === "past") {
-        return trip.status === "completed" || (endDate && endDate < now);
-      }
+        if (filter === "upcoming") {
+          if (hasNoDates) return false;
+          return trip.status === "upcoming" || (endDate && endDate >= now);
+        }
 
-      return true;
-    }) || [];
+        if (filter === "past") {
+          return trip.status === "completed" || (endDate && endDate < now);
+        }
+
+        return true;
+      }) || [];
 
   const getStatusVariant = (trip) => {
     if (trip.status === "draft") return "secondary";
 
     const now = new Date();
-    const startDate = new Date(trip.startDate);
-    const endDate = new Date(trip.endDate);
+    const startDate = parseDate(trip.startDate);
+    const endDate = parseDate(trip.endDate);
 
-    if (endDate < now) return "success";
-    if (startDate <= now && endDate >= now) return "warning";
+    if (!startDate && !endDate) return "secondary";
+    if (endDate && endDate < now) return "success";
+    if (startDate && endDate && startDate <= now && endDate >= now) return "warning";
     return "primary";
   };
 
@@ -83,12 +160,33 @@ const Trips = () => {
     if (trip.status === "draft") return "Draft";
 
     const now = new Date();
-    const startDate = new Date(trip.startDate);
-    const endDate = new Date(trip.endDate);
+    const startDate = parseDate(trip.startDate);
+    const endDate = parseDate(trip.endDate);
 
-    if (endDate < now) return "Completed";
-    if (startDate <= now && endDate >= now) return "In Progress";
+    if (!startDate && !endDate) return "Flexible";
+    if (endDate && endDate < now) return "Completed";
+    if (startDate && endDate && startDate <= now && endDate >= now) return "In Progress";
     return "Upcoming";
+  };
+
+  const handleDeleteTrip = async (e, tripId, tripTitle) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm(`Are you sure you want to delete "${tripTitle || "this trip"}"?`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(tripId);
+      await tripAPI.deleteTrip(tripId);
+      toast.success("Trip removed successfully");
+      if (refetch) refetch();
+    } catch (err) {
+      toast.error("Failed to delete trip");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -205,7 +303,7 @@ const Trips = () => {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <FaMapMarkedAlt className="h-12 w-12 md:h-16 md:w-16" style={{color:'rgba(255,178,36,0.2)'}} />
                       </div>
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute top-3 right-3 flex items-center gap-2">
                         <span
                           className="font-bold shadow-lg text-xs md:text-sm px-2.5 py-1 rounded-full"
                           style={getStatusVariant(trip) === 'success'
@@ -216,6 +314,16 @@ const Trips = () => {
                         >
                           {getStatusLabel(trip)}
                         </span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteTrip(e, trip._id || trip.id, trip.destination?.city || trip.title)}
+                          disabled={deletingId === (trip._id || trip.id)}
+                          className="p-1.5 rounded-full text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          style={{border:'1px solid rgba(255,255,255,0.1)', background:'rgba(0,0,0,0.3)'}}
+                          title="Delete trip"
+                        >
+                          <FaTrash className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                        </button>
                       </div>
                     </div>
 
@@ -225,7 +333,8 @@ const Trips = () => {
                         <h3 className="text-lg md:text-xl font-bold mb-0.5 md:mb-1" style={{color:'#ffffff'}}>
                           {trip.destination?.city ||
                             trip.title ||
-                            trip.destination}
+                            (typeof trip.destination === 'string' ? trip.destination : null) ||
+                            "Untitled Trip"}
                           {trip.destination?.country &&
                             trip.destination.city !==
                             trip.destination.country &&
@@ -247,20 +356,7 @@ const Trips = () => {
                       <div className="flex items-center text-xs md:text-sm" style={{color:'#9CA3AF'}}>
                         <FaCalendarAlt className="mr-2" style={{color:'rgba(255,178,36,0.6)'}} />
                         <span>
-                          {new Date(trip.startDate).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            }
-                          )}{" "}
-                          -{" "}
-                          {new Date(trip.endDate).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {formatDateRange(trip)}
                         </span>
                       </div>
 
